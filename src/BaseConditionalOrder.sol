@@ -31,7 +31,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator {
         bytes calldata offchainInput,
         GPv2Order.Data calldata
     ) external view override {
-        GPv2Order.Data memory generatedOrder = getTradeableOrder(owner, sender, ctx, staticInput, offchainInput);
+        GPv2Order.Data memory generatedOrder = generateOrder(owner, sender, ctx, staticInput, offchainInput);
 
         /// @dev Verify that the *generated* order is valid and matches the payload.
         if (!(_hash == GPv2Order.hash(generatedOrder, domainSeparator))) {
@@ -43,7 +43,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator {
      * @dev Set the visibility of this function to `public` to allow `verify` to call it.
      * @inheritdoc IConditionalOrderGenerator
      */
-    function getTradeableOrder(
+    function generateOrder(
         address owner,
         address sender,
         bytes32 ctx,

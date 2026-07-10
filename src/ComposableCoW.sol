@@ -238,7 +238,7 @@ contract ComposableCoW is ISafeSignatureVerifier {
             revert InterfaceNotSupported();
         }
 
-        order = IConditionalOrderGenerator(address(params.handler)).getTradeableOrder(
+        order = IConditionalOrderGenerator(address(params.handler)).generateOrder(
             owner, msg.sender, ctx, params.staticInput, offchainInput
         );
 

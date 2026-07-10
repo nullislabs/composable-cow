@@ -71,100 +71,100 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
     /**
      * @dev Revert when the sell token and buy token are the same
      */
-    function test_getTradeableOrder_RevertOnSameTokens() public {
+    function test_generateOrder_RevertOnSameTokens() public {
         // Revert when the same token is used for both the buy and sell token
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.sellToken = token0;
         o.buyToken = token0;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_SAME_TOKEN));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Revert when either the buy or sell token is address(0)
      */
-    function test_getTradeableOrder_RevertOnTokenZero() public {
+    function test_generateOrder_RevertOnTokenZero() public {
         // Revert when either the buy or sell token is address(0)
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.sellToken = IERC20(address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_TOKEN));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
 
         o.sellToken = token0;
         o.buyToken = IERC20(address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_TOKEN));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Revert when the sell amount is 0
      */
-    function test_getTradeableOrder_RevertOnZeroPartSellAmount() public {
+    function test_generateOrder_RevertOnZeroPartSellAmount() public {
         // Revert when the sell amount is zero
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.partSellAmount = 0;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_PART_SELL_AMOUNT));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Revert when the min part limit is 0
      */
-    function test_getTradeableOrder_RevertOnZeroMinPartLimit() public {
+    function test_generateOrder_RevertOnZeroMinPartLimit() public {
         // Revert when the limit is zero
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.minPartLimit = 0;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_MIN_PART_LIMIT));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test revert on invalid start time
      */
-    function test_getTradeableOrder_FuzzRevertOnInvalidStartTime(uint256 startTime) public {
+    function test_generateOrder_FuzzRevertOnInvalidStartTime(uint256 startTime) public {
         vm.assume(startTime >= type(uint32).max);
         // Revert when the start time exceeds or equals the max uint32
         TWAPOrder.Data memory o = _twapTestBundle(startTime);
         o.t0 = startTime;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_START_TIME));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test revert on invalid numParts
      */
-    function test_getTradeableOrder_FuzzRevertOnInvalidNumParts(uint256 numParts) public {
+    function test_generateOrder_FuzzRevertOnInvalidNumParts(uint256 numParts) public {
         vm.assume(numParts < 2 || numParts > type(uint32).max);
         // Revert if not an actual TWAP (ie. numParts < 2)
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.n = numParts;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_NUM_PARTS));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test revert on invalid frequency
      */
-    function test_getTradeableOrder_FuzzRevertOnInvalidFrequency(uint256 frequency) public {
+    function test_generateOrder_FuzzRevertOnInvalidFrequency(uint256 frequency) public {
         vm.assume(frequency < 1 || frequency > 365 days);
         TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
         o.t = frequency;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_FREQUENCY));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test revert on invalid span
      */
-    function test_getTradeableOrder_FuzzRevertOnInvalidSpan(uint256 frequency, uint256 span) public {
+    function test_generateOrder_FuzzRevertOnInvalidSpan(uint256 frequency, uint256 span) public {
         vm.assume(frequency > 0 && frequency <= 365 days);
         vm.assume(span > frequency);
 
@@ -173,13 +173,13 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         o.span = span;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_SPAN));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test to make sure that the order reverts if the current time is before the start time
      */
-    function test_getTradeableOrder_FuzzRevertIfBeforeStart(uint256 startTime, uint256 currentTime) public {
+    function test_generateOrder_FuzzRevertIfBeforeStart(uint256 startTime, uint256 currentTime) public {
         // guard against overflows
         vm.assume(startTime < (type(uint32).max - FREQUENCY));
         // force revert before start
@@ -192,19 +192,19 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to current time
         vm.warp(currentTime);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, BEFORE_TWAP_START));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test that the order reverts if the current time is after the expiry
      */
-    function test_getTradeableOrder_FuzzRevertIfExpired(uint256 startTime, uint256 currentTime) public {
+    function test_generateOrder_FuzzRevertIfExpired(uint256 startTime, uint256 currentTime) public {
         // guard against overflows
         vm.assume(startTime <= type(uint32).max);
         vm.assume(currentTime <= type(uint32).max);
@@ -218,19 +218,19 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to expiry
         vm.warp(currentTime);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, AFTER_TWAP_FINISH));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
      * @dev Fuzz test that the order reverts if the current time is outside of the span
      */
-    function test_getTradeableOrder_FuzzRevertIfOutsideSpan(uint256 startTime, uint256 currentTime) public {
+    function test_generateOrder_FuzzRevertIfOutsideSpan(uint256 startTime, uint256 currentTime) public {
         // guard against overflows
         vm.assume(startTime < type(uint32).max);
         vm.assume(currentTime < type(uint32).max);
@@ -246,16 +246,16 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to outside of the span
         vm.warp(currentTime);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, NOT_WITHIN_SPAN));
-        twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
-    function test_getTradeableOrder_FuzzRevertIfOrderBeforeBlockTimestamp(
+    function test_generateOrder_FuzzRevertIfOrderBeforeBlockTimestamp(
         uint256 ctxBlockTimestamp,
         uint256 currentTime
     ) public {
@@ -284,7 +284,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
     }
 
-    function test_getTradeableOrder_FuzzRevertIfOrderAfterBlocktimestampValidity(
+    function test_generateOrder_FuzzRevertIfOrderAfterBlocktimestampValidity(
         uint256 ctxBlockTimestamp,
         uint256 currentTime
     ) public {
@@ -313,7 +313,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
     }
 
-    function test_getTradeableOrder_e2e_fuzz_WithContext(uint32 _blockTimestamp, uint256 currentTime) public {
+    function test_generateOrder_e2e_fuzz_WithContext(uint32 _blockTimestamp, uint256 currentTime) public {
         // guard against overflows
         vm.assume(_blockTimestamp < type(uint32).max);
         vm.assume(currentTime < type(uint32).max);
@@ -356,7 +356,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
     /**
      * @dev Fuzz test an order that is valid and should not revert from e2e
      */
-    function test_getTradeableOrder_e2e_fuzz(uint256 startTime, uint256 currentTime) public {
+    function test_generateOrder_e2e_fuzz(uint256 startTime, uint256 currentTime) public {
         // guard against overflows
         vm.assume(startTime < type(uint32).max);
         vm.assume(currentTime < type(uint32).max);
@@ -407,7 +407,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         vm.warp(currentTime);
 
         GPv2Order.Data memory order =
-            twap.getTradeableOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+            twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // Verify that the order is valid - this shouldn't revert
