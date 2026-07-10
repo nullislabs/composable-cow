@@ -300,4 +300,155 @@ contract ComposableCoWPollTest is BaseComposableCoWTest {
         assertEq(order.sellAmount, 42e18);
         assertEq(revertData.length, 0);
     }
+
+    // --- registry-level composition tests ---
+
+    /// @dev getTradeableOrderWithSignature surfaces the handler verdict unchanged
+    function test_getTradeableOrderWithSignature_UsesPollInternally() public {
+        uint256 expectedTimestamp = block.timestamp + 1 days;
+        bytes4 expectedReason = TestWaitTimestamp.selector;
+        PollTryAtTimestampHandler handler = new PollTryAtTimestampHandler(expectedTimestamp, expectedReason);
+
+        IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
+            handler: IConditionalOrder(address(handler)), salt: keccak256("test"), staticInput: bytes("")
+        });
+
+        _create(address(safe1), params, false);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_TIMESTAMP));
+        assertEq(result.generator.waitUntil, expectedTimestamp);
+        assertEq(result.generator.reasonCode, expectedReason);
+        assertEq(signature.length, 0);
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.NONE));
+    }
+
+    /// @dev Helper: register a SuccessHandler order and return its params
+    function _successOrder(bool partiallyFillable)
+        internal
+        returns (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler)
+    {
+        handler = new SuccessHandler();
+        handler.setOrder(
+            GPv2Order.Data({
+                sellToken: token0,
+                buyToken: token1,
+                receiver: address(0),
+                sellAmount: 100e18,
+                buyAmount: 50e18,
+                validTo: uint32(block.timestamp + 1 hours),
+                appData: keccak256("fill-overlay"),
+                feeAmount: 0,
+                kind: GPv2Order.KIND_SELL,
+                partiallyFillable: partiallyFillable,
+                sellTokenBalance: GPv2Order.BALANCE_ERC20,
+                buyTokenBalance: GPv2Order.BALANCE_ERC20
+            })
+        );
+        params = IConditionalOrder.ConditionalOrderParams({
+            handler: IConditionalOrder(address(handler)), salt: keccak256("fill-overlay"), staticInput: bytes("")
+        });
+        _create(address(safe1), params, false);
+    }
+
+    /// @dev Mock the observed fill amount for every filledAmount(bytes) call
+    function _mockFilledAmount(uint256 amount) internal {
+        vm.mockCall(
+            address(composableCow.settlement()), abi.encodeWithSignature("filledAmount(bytes)"), abi.encode(amount)
+        );
+    }
+
+    /// @dev No fill observed: NONE overlay, signature returned
+    function test_fillOverlay_NoneReturnsSignature() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(0);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.NONE));
+        assertEq(result.filledAmount, 0);
+        assertGt(signature.length, 0);
+    }
+
+    /// @dev A partially filled partiallyFillable order keeps returning its signature
+    function test_fillOverlay_PartialFillKeepsPosting() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(40e18);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.PARTIALLY_FILLED));
+        assertEq(result.filledAmount, 40e18);
+        assertGt(signature.length, 0);
+    }
+
+    /// @dev A partial fill on a fill-or-kill order does not return a signature
+    function test_fillOverlay_PartialFillOnFillOrKillWithholdsSignature() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(false);
+        _mockFilledAmount(40e18);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.PARTIALLY_FILLED));
+        assertEq(signature.length, 0);
+    }
+
+    /// @dev A fully filled order does not return a signature
+    function test_fillOverlay_FilledWithholdsSignature() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(100e18);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.FILLED));
+        assertEq(result.filledAmount, 100e18);
+        assertEq(signature.length, 0);
+    }
+
+    /// @dev An invalidated order is INVALIDATED, not FILLED, and not postable
+    function test_fillOverlay_InvalidatedIsDistinctFromFilled() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(type(uint256).max);
+
+        (ComposableCoW.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.INVALIDATED));
+        assertEq(result.filledAmount, type(uint256).max);
+        assertEq(signature.length, 0);
+    }
+
+    /// @dev checkOrder returns the same composed overlay as the signature path
+    function test_checkOrder_ComposesFillOverlay() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(100e18);
+
+        ComposableCoW.PollResult memory result =
+            composableCow.checkOrder(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(uint256(result.fill), uint256(ComposableCoW.FillStatus.FILLED));
+    }
+
+    /// @dev checkOrder applies the ERC-165 handler gate
+    function test_checkOrder_RevertInterfaceNotSupported() public {
+        IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
+            handler: IConditionalOrder(address(token0)), // a contract without ERC-165
+            salt: keccak256("no-interface"),
+            staticInput: bytes("")
+        });
+        _create(address(safe1), params, false);
+
+        vm.expectRevert(ComposableCoW.InterfaceNotSupported.selector);
+        composableCow.checkOrder(address(safe1), params, bytes(""), new bytes32[](0));
+    }
 }

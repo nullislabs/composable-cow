@@ -4,6 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {
     GPv2Order,
     IConditionalOrder,
+    ComposableCoW,
     BaseComposableCoWTest,
     TestNonSafeWallet,
     ERC1271Forwarder
@@ -24,9 +25,10 @@ contract ComposableCoWForwarderTest is BaseComposableCoWTest {
         _create(address(nonSafe), params, false);
 
         // should return a valid order and signature
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(nonSafe), params, abi.encode(getBlankOrder()), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         bytes32 badDigest = GPv2Order.hash(order, keccak256("deadbeef"));
 

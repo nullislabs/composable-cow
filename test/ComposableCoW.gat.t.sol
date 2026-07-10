@@ -198,9 +198,10 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         deal(address(o.sellToken), address(safe1), currentBalance);
 
         // This should not revert
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(buyAmount), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // Verify that the order is valid - this shouldn't revert
         assertTrue(
@@ -244,9 +245,10 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         // This should not revert
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(buyAmount), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // Verify that the order is valid - this shouldn't revert
         assertTrue(
@@ -325,9 +327,10 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         vm.warp(o.startTime);
 
         // 4. Get the order and signature
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(uint256(100)), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // 5. Execute the order
         settle(address(safe1), bob, order, signature, bytes4(0));

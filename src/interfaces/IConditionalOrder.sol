@@ -93,8 +93,12 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
      * @dev This event is emitted when a new conditional order is created.
      * @param owner the address that has created the conditional order
      * @param params the address / salt / data of the conditional order
+     * @param context the resolved cabinet value for context-created orders
+     *        (abi-encoded bytes32), empty bytes otherwise
      */
-    event ConditionalOrderCreated(address indexed owner, IConditionalOrder.ConditionalOrderParams params);
+    event ConditionalOrderCreated(
+        address indexed owner, IConditionalOrder.ConditionalOrderParams params, bytes context
+    );
 
     /**
      * @dev The handler's verdict on whether a discrete order can be posted.
