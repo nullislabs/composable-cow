@@ -477,17 +477,12 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
      * @param span The span of the TWAP order
      */
     function test_simulate_fuzz(uint32 numParts, uint32 frequency, uint32 span) public {
-        // guard against underflows
-        vm.assume(span < frequency);
-        // guard against reversions
-        numParts = uint32(bound(numParts, 2, type(uint32).max));
-        frequency = uint32(bound(frequency, 120, type(uint32).max));
-        // provide some sane limits to avoid out of gas on test issues
-        vm.assume(
-            span == 0
-                ? uint256(numParts) * uint256(frequency) < 1 hours
-                : uint256(numParts) * uint256(span) + (uint256(numParts) * uint256(frequency - span) * 3) < 4 hours
-        );
+        // Construct the bundle within a bounded envelope: every simulated second
+        // is an external call whose returndata accumulates in test memory, so the
+        // total simulated time must stay small to avoid memory exhaustion.
+        numParts = uint32(bound(numParts, 2, 6));
+        frequency = uint32(bound(frequency, 120, 900 / numParts));
+        span = uint32(bound(span, 0, frequency - 1));
 
         // Assemble the TWAP bundle
         TWAPOrder.Data memory bundle = _twapTestBundle(block.timestamp);
