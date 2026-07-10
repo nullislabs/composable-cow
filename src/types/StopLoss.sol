@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IERC20, GPv2Order, IConditionalOrder, BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {
+    IERC20,
+    GPv2Order,
+    IConditionalOrder,
+    IConditionalOrderGenerator,
+    BaseConditionalOrder
+} from "../BaseConditionalOrder.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
@@ -111,5 +117,30 @@ contract StopLoss is BaseConditionalOrder {
             GPv2Order.BALANCE_ERC20,
             GPv2Order.BALANCE_ERC20
         );
+    }
+
+    /**
+     * @inheritdoc IConditionalOrderGenerator
+     * @dev Single-shot order: once it fills there is nothing further to poll for.
+     */
+    function getNextPollTimestamp(address, bytes32, bytes calldata, GPv2Order.Data memory)
+        external
+        pure
+        override
+        returns (uint256)
+    {
+        return POLL_NEVER;
+    }
+
+    /**
+     * @inheritdoc IConditionalOrderGenerator
+     */
+    function describeOrder(address, bytes32, bytes calldata, GPv2Order.Data memory)
+        external
+        pure
+        override
+        returns (string memory)
+    {
+        return "stop-loss triggered";
     }
 }

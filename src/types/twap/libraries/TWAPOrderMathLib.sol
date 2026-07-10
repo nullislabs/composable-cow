@@ -38,8 +38,11 @@ library TWAPOrderMathLib {
         assert(span <= frequency);
 
         unchecked {
-            /// @dev Order is not valid before the start (order commences at `t0`).
-            if (!(startTime <= block.timestamp)) revert IConditionalOrder.OrderNotValid(BeforeTwapStart.selector);
+            /// @dev Order is not yet valid before the start (order commences at `t0`);
+            ///      a watch tower should try again at the start time.
+            require(
+                startTime <= block.timestamp, IConditionalOrder.PollTryAtTimestamp(startTime, BeforeTwapStart.selector)
+            );
 
             /**
              *  @dev Order is expired after the last part (`n` parts, running at `t` time length).
@@ -50,9 +53,10 @@ library TWAPOrderMathLib {
              * Addition overflow: `startTime` is bounded by `block.timestamp` which is reasonably bounded by
              * `type(uint32).max` so the sum of `startTime + (numParts * frequency)` is ≈ 2⁵⁵.
              */
-            if (!(block.timestamp < startTime + (numParts * frequency))) {
-                revert IConditionalOrder.OrderNotValid(AfterTwapFinish.selector);
-            }
+            require(
+                block.timestamp < startTime + (numParts * frequency),
+                IConditionalOrder.OrderNotValid(AfterTwapFinish.selector)
+            );
 
             /**
              * @dev We use integer division to get the part number as we want to round down to the nearest part.
@@ -101,5 +105,15 @@ library TWAPOrderMathLib {
              * checked during settlement in `GPv2Settlement.settle`.
              */
         }
+    }
+
+    /**
+     * @dev Calculate the current part number for a TWAP order.
+     * @param startTime The start time of the TWAP order.
+     * @param frequency The frequency of each part (in seconds).
+     */
+    function currentPart(uint256 startTime, uint256 frequency) internal view returns (uint256) {
+        if (block.timestamp < startTime) return 0;
+        return (block.timestamp - startTime) / frequency;
     }
 }

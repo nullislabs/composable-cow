@@ -345,4 +345,10 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         assertEq(order.sellTokenBalance, GPv2Order.BALANCE_ERC20);
         assertEq(order.buyTokenBalance, GPv2Order.BALANCE_ERC20);
     }
+
+    /// @dev Single-shot: stop polling after fill, and a descriptive reason
+    function test_pollHints_SingleShot() public {
+        assertEq(stopLoss.getNextPollTimestamp(address(0), bytes32(0), bytes(""), getBlankOrder()), type(uint256).max);
+        assertEq(stopLoss.describeOrder(address(0), bytes32(0), bytes(""), getBlankOrder()), "stop-loss triggered");
+    }
 }
