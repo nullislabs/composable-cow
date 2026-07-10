@@ -3,6 +3,8 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {ERC1271} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
 
+import {IConditionalOrderGenerator} from "../src/interfaces/IConditionalOrder.sol";
+
 import {
     IERC165,
     IConditionalOrder,
@@ -63,8 +65,9 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         uint256 snapshot = vm.snapshot();
 
         // should work as there is no swap guard set
-        (GPv2Order.Data memory order, bytes memory signature) =
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        GPv2Order.Data memory order = orderRes.generator.order;
         settle(address(safe1), bob, order, signature, bytes4(0));
 
         // restores the state
@@ -76,9 +79,12 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         // should not be able to settle as the swap guard doesn't allow it
         settle(address(safe1), bob, order, signature, ComposableCoW.SwapGuardRestricted.selector);
 
-        // should not be able to return the order as the swap guard doesn't allow it
-        vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);
-        composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        // should not return a signature as the swap guard doesn't allow it
+        (ComposableCoW.PollResult memory guardedRes, bytes memory guardedSig) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
+        assertEq(guardedRes.generator.reasonCode, ComposableCoW.SwapGuardRestricted.selector);
+        assertEq(guardedSig.length, 0);
 
         // should set the swap guard to the odd swap guard
         _setSwapGuard(address(safe1), oddSwapGuard);
@@ -117,18 +123,21 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // should return a valid order and signature (no guard is set)
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(orderOtherReceiver), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // should set the swap guard
         _setSwapGuard(address(safe1), lock);
 
-        // should revert as the receiver is not the safe
-        vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);
-        composableCow.getTradeableOrderWithSignature(
+        // should not return a signature as the receiver is not the safe
+        (ComposableCoW.PollResult memory guardedRes, bytes memory guardedSig) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(orderOtherReceiver), new bytes32[](0)
         );
+        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
+        assertEq(guardedRes.generator.reasonCode, ComposableCoW.SwapGuardRestricted.selector);
+        assertEq(guardedSig.length, 0);
 
         // should revert as the receiver is not the safe
         vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);

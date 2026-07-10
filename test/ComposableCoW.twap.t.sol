@@ -4,6 +4,8 @@ pragma solidity >=0.8.0 <0.9.0;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ERC1271} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
 
+import {IConditionalOrderGenerator} from "../src/interfaces/IConditionalOrder.sol";
+
 import {
     IERC20,
     IConditionalOrder,
@@ -278,9 +280,12 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         // Warp to the current time
         vm.warp(currentTime);
 
-        // The below should revert
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, BeforeTwapStart.selector));
-        composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        // The below should return the terminal INVALID verdict
+        (ComposableCoW.PollResult memory invalidRes, bytes memory invalidSig) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        assertEq(uint256(invalidRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
+        assertEq(invalidRes.generator.reasonCode, BeforeTwapStart.selector);
+        assertEq(invalidSig.length, 0);
     }
 
     function test_generateOrder_FuzzRevertIfOrderAfterBlocktimestampValidity(
@@ -307,9 +312,12 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         // Warp to the current time
         vm.warp(currentTime);
 
-        // The below should revert
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, AfterTwapFinish.selector));
-        composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        // The below should return the terminal INVALID verdict
+        (ComposableCoW.PollResult memory invalidRes, bytes memory invalidSig) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        assertEq(uint256(invalidRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
+        assertEq(invalidRes.generator.reasonCode, AfterTwapFinish.selector);
+        assertEq(invalidSig.length, 0);
     }
 
     function test_generateOrder_e2e_fuzz_WithContext(uint32 _blockTimestamp, uint256 currentTime) public {
@@ -336,8 +344,9 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         assertEq(composableCow.cabinet(address(safe1), composableCow.hash(params)), bytes32(uint256(_blockTimestamp)));
 
         // This should not revert
-        (GPv2Order.Data memory part, bytes memory signature) =
+        (ComposableCoW.PollResult memory partRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        GPv2Order.Data memory part = partRes.generator.order;
 
         // Verify that the order is valid - this shouldn't revert
         assertTrue(
@@ -376,8 +385,9 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         vm.warp(currentTime);
 
         // This should not revert
-        (GPv2Order.Data memory part, bytes memory signature) =
+        (ComposableCoW.PollResult memory partRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+        GPv2Order.Data memory part = partRes.generator.order;
 
         // Verify that the order is valid - this shouldn't revert
         assertTrue(
@@ -436,8 +446,9 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         _setRoot(address(safe1), root, ComposableCoW.Proof({location: 0, data: ""}));
 
         // 4. Get the order and signature
-        (GPv2Order.Data memory order, bytes memory signature) =
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), leaf, bytes(""), proof);
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // 5. Execute the order
         settle(address(safe1), bob, order, signature, bytes4(0));
@@ -496,11 +507,11 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         while (true) {
             // Simulate being called by the watch tower
 
-            try composableCow.getTradeableOrderWithSignature(
-                address(safe1), params, bytes(""), new bytes32[](0)
-            ) returns (
-                GPv2Order.Data memory order, bytes memory signature
-            ) {
+            (ComposableCoW.PollResult memory simRes, bytes memory signature) =
+                composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+            if (simRes.generator.code == IConditionalOrderGenerator.GeneratorResultCode.POST) {
+                GPv2Order.Data memory order = simRes.generator.order;
                 bytes32 orderDigest = GPv2Order.hash(order, settlement.domainSeparator());
                 if (
                     orderFills[orderDigest] == 0
@@ -514,21 +525,19 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
                     totalFills++;
                 }
 
-                // only count this second if we didn't revert
+                // only count this second if the order was postable
                 numSecsProcessed++;
-            } catch (bytes memory lowLevelData) {
-                bytes4 receivedSelector = bytes4(lowLevelData);
-
-                // Should have reverted if the `numSecsProcessed` > `frequency * numParts`
-                if (block.timestamp == endTime && receivedSelector == IConditionalOrder.OrderNotValid.selector) {
+            } else if (simRes.generator.code == IConditionalOrderGenerator.GeneratorResultCode.INVALID) {
+                // Should be terminal once `numSecsProcessed` > `frequency * numParts`
+                if (block.timestamp == endTime) {
                     break;
                 } else if (block.timestamp > endTime) {
-                    revert("OrderNotValid() should have been thrown");
+                    revert("INVALID verdict should have been returned");
                 }
 
                 // The order should always be valid because there is no span
-                if (span == 0 && receivedSelector == IConditionalOrder.OrderNotValid.selector) {
-                    revert("OrderNotValid() should not be thrown");
+                if (span == 0) {
+                    revert("INVALID verdict should not be returned");
                 }
             }
             vm.warp(block.timestamp + 1 seconds);

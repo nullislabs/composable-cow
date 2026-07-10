@@ -55,8 +55,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _setRoot(address(safe1), root, proofStruct);
 
         // should pass with the root correctly set
-        (GPv2Order.Data memory order, bytes memory signature) =
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // save the state
         uint256 snapshot = vm.snapshot();
@@ -97,8 +98,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _setRootWithContext(address(safe1), root, proofStruct, testContextValue, abi.encode(bytes32("testValue")));
 
         // should pass with the root correctly set
-        (GPv2Order.Data memory order, bytes memory signature) =
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // save the state
         uint256 snapshot = vm.snapshot();
@@ -208,8 +210,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         uint256 snapshot = vm.snapshot();
 
         // order can be returned as it is authorized
-        (GPv2Order.Data memory order, bytes memory signature) =
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // should successfully settle the order
         settle(address(safe1), bob, order, signature, bytes4(0));
@@ -431,9 +434,10 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _create(address(safe1), params, false);
 
         // should return a valid order and signature
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(getBlankOrder()), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // order should be valid by using the `isValidSignature` function on the safe
         assertEq(
@@ -452,14 +456,50 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _create(address(nonSafe), params, false);
 
         // should return a valid order and signature
-        (GPv2Order.Data memory order, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
+        (ComposableCoW.PollResult memory orderRes, bytes memory signature) = composableCow.getTradeableOrderWithSignature(
             address(nonSafe), params, abi.encode(getBlankOrder()), new bytes32[](0)
         );
+        GPv2Order.Data memory order = orderRes.generator.order;
 
         // order should be valid by using the `isValidSignature` function on the non-safe
         assertEq(
             nonSafe.isValidSignature(GPv2Order.hash(order, composableCow.domainSeparator()), signature),
             ERC1271.isValidSignature.selector
         );
+    }
+
+    /// @dev remove() emits ConditionalOrderRemoved keyed by the params hash
+    function test_remove_EmitsConditionalOrderRemoved() public {
+        IConditionalOrder.ConditionalOrderParams memory params = getPassthroughOrder();
+        _create(address(safe1), params, false);
+
+        bytes32 orderHash = keccak256(abi.encode(params));
+
+        vm.expectEmit(true, true, true, true);
+        emit ConditionalOrderRemoved(address(safe1), orderHash);
+
+        vm.prank(address(safe1));
+        composableCow.remove(orderHash);
+
+        assertFalse(composableCow.singleOrders(address(safe1), orderHash));
+    }
+
+    /// @dev remove() emits for any owner
+    function test_remove_FuzzEmitsEvent(address owner, bytes32 salt) public {
+        vm.assume(owner != address(0));
+
+        IConditionalOrder.ConditionalOrderParams memory params = getPassthroughOrder();
+        params.salt = salt;
+
+        vm.prank(owner);
+        composableCow.create(params, false);
+
+        bytes32 orderHash = keccak256(abi.encode(params));
+
+        vm.expectEmit(true, true, true, true);
+        emit ConditionalOrderRemoved(owner, orderHash);
+
+        vm.prank(owner);
+        composableCow.remove(orderHash);
     }
 }
