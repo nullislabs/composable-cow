@@ -8,7 +8,7 @@ import {
     GPv2Order,
     ComposableCoW,
     ComposableCoWLib,
-    INVALID_HASH,
+    InvalidHash,
     BaseComposableCoWTest,
     Safe,
     TestNonSafeWallet
@@ -120,9 +120,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
     /// @dev Should disallow setting a handler that is address(0)
     function test_create_RevertOnInvalidHandler() public {
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(address(0)),
-            salt: keccak256("zero is invalid handler"),
-            staticInput: ""
+            handler: IConditionalOrder(address(0)), salt: keccak256("zero is invalid handler"), staticInput: ""
         });
 
         vm.expectRevert(ComposableCoW.InvalidHandler.selector);
@@ -139,9 +137,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         vm.assume(handler != address(0));
 
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
         bytes32 orderHash = keccak256(abi.encode(params));
 
@@ -167,9 +163,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         vm.assume(handler != address(0));
 
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
         bytes32 orderHash = keccak256(abi.encode(params));
 
@@ -246,7 +240,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // should revert as the order hash mismatches
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, INVALID_HASH));
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidHash.selector));
         composableCow.isValidSafeSignature(
             Safe(payable(address(alice.addr))),
             address(0),
@@ -255,7 +249,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             bytes32(0),
             abi.encode(order1),
             abi.encode(
-                ComposableCoW.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: abi.encode(order2)})
+                ComposableCoW.PayloadStruct({
+                    proof: new bytes32[](0), params: params, offchainInput: abi.encode(order2)
+                })
             )
         );
     }
@@ -273,9 +269,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         vm.assume(proof.length > 0);
 
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
 
         // should set the root
@@ -304,9 +298,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         vm.assume(handler != address(0));
 
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
 
         // should revert as the order has not been created
@@ -327,9 +319,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         // Use the mirror handler as we can use it to inspect the calldata
         // passed to the handler.
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(mirror),
-            salt: keccak256("mirror"),
-            staticInput: bytes("")
+            handler: IConditionalOrder(mirror), salt: keccak256("mirror"), staticInput: bytes("")
         });
 
         // should create a single order
@@ -381,9 +371,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
     function test_getTradeableOrderWithSignature_RevertInterfaceNotSupported() public {
         // use the mirror handler as it does not support the interface
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: mirror,
-            salt: keccak256("mirror"),
-            staticInput: bytes("")
+            handler: mirror, salt: keccak256("mirror"), staticInput: bytes("")
         });
 
         // should create a single order
@@ -407,9 +395,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         vm.assume(proof.length > 0);
 
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
 
         // should set the root
@@ -428,9 +414,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         bytes memory staticInput
     ) public {
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
 
         // should revert as the order has not been created

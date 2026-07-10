@@ -11,16 +11,17 @@ import {IERC165} from "safe/interfaces/IERC165.sol";
  */
 interface IConditionalOrder {
     /// @dev This error is returned by the `generateOrder` function if the order condition is not met.
-    ///      A parameter of `string` type is included to allow the caller to specify the reason for the failure.
-    error OrderNotValid(string);
+    ///      `reasonCode` is the selector of a handler-declared custom error, so any ABI-aware
+    ///      consumer can resolve it to a name without a bespoke table.
+    error OrderNotValid(bytes4 reasonCode);
 
     // --- errors specific for polling
     // Signal to a watch tower that polling should be attempted again.
-    error PollTryNextBlock(string reason);
+    error PollTryNextBlock(bytes4 reasonCode);
     // Signal to a watch tower that polling should be attempted again at a specific block number.
-    error PollTryAtBlock(uint256 blockNumber, string reason);
+    error PollTryAtBlock(uint256 blockNumber, bytes4 reasonCode);
     // Signal to a watch tower that polling should be attempted again at a specific timestamp.
-    error PollTryAtTimestamp(uint256 timestamp, string reason);
+    error PollTryAtTimestamp(uint256 timestamp, bytes4 reasonCode);
 
     /**
      * @dev This struct is used to uniquely identify a conditional order for an owner.

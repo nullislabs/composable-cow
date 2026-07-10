@@ -11,7 +11,7 @@ import {TestAccount, TestAccountLib} from "./libraries/TestAccountLib.t.sol";
 import {SafeLib} from "./libraries/SafeLib.t.sol";
 import {ComposableCoWLib} from "./libraries/ComposableCoWLib.t.sol";
 
-import {IConditionalOrder, IERC20, BaseConditionalOrder, INVALID_HASH} from "../src/BaseConditionalOrder.sol";
+import {IConditionalOrder, IERC20, BaseConditionalOrder, InvalidHash} from "../src/BaseConditionalOrder.sol";
 import {BaseSwapGuard} from "../src/guards/BaseSwapGuard.sol";
 
 import {TWAP, TWAPOrder} from "../src/types/twap/TWAP.sol";
@@ -185,9 +185,7 @@ contract BaseComposableCoWTest is Base, Merkle {
         returns (IConditionalOrder.ConditionalOrderParams memory params)
     {
         params = IConditionalOrder.ConditionalOrderParams({
-            handler: IConditionalOrder(handler),
-            salt: salt,
-            staticInput: staticInput
+            handler: IConditionalOrder(handler), salt: salt, staticInput: staticInput
         });
     }
 
@@ -216,9 +214,7 @@ contract BaseComposableCoWTest is Base, Merkle {
         _leaves = new IConditionalOrder.ConditionalOrderParams[](n);
         for (uint256 i = 0; i < _leaves.length; i++) {
             _leaves[i] = IConditionalOrder.ConditionalOrderParams({
-                handler: twap,
-                salt: keccak256(abi.encode(bytes32(i))),
-                staticInput: abi.encode(twapData)
+                handler: twap, salt: keccak256(abi.encode(bytes32(i))), staticInput: abi.encode(twapData)
             });
         }
 

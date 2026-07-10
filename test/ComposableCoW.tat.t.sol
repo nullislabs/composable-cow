@@ -36,20 +36,12 @@ contract ComposableCoWTatTest is BaseComposableCoWTest {
 
         // should revert when the current balance is below the minimum balance
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.PollTryNextBlock.selector,
-                BALANCE_INSUFFICIENT
-            )
+            abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, BalanceInsufficient.selector)
         );
         tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
-    function test_BalanceMet_fuzz(
-        address receiver,
-        uint256 threshold,
-        bytes32 appData,
-        uint256 currentBalance
-    ) public {
+    function test_BalanceMet_fuzz(address receiver, uint256 threshold, bytes32 appData, uint256 currentBalance) public {
         vm.assume(threshold > 0);
         vm.assume(currentBalance >= threshold);
 
@@ -65,14 +57,12 @@ contract ComposableCoWTatTest is BaseComposableCoWTest {
             appData: appData
         });
 
-
         // // set the current balance
         deal(address(token0), address(safe1), currentBalance);
 
         // This should not revert
         GPv2Order.Data memory order =
             tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(data), bytes(""));
-
 
         assertEq(address(order.sellToken), address(token0));
         assertEq(address(order.buyToken), address(token1));
