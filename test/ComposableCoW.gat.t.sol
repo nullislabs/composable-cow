@@ -18,6 +18,7 @@ import {
     IExpectedOutCalculator,
     GoodAfterTime,
     TooEarly,
+    ZeroAmount,
     BalanceInsufficient,
     PriceCheckerFailed
 } from "../src/types/GoodAfterTime.sol";
@@ -122,6 +123,8 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         // guard against 32 bit overflow
         vm.assume(endTime < type(uint32).max);
         vm.assume(startTime < endTime);
+        // zero sell amounts are rejected at validation
+        vm.assume(sellAmount > 0);
 
         GoodAfterTime.Data memory o = GoodAfterTime.Data({
             sellToken: token0,
@@ -372,6 +375,18 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
     function test_pollHints_SingleShot() public {
         assertEq(gat.getNextPollTimestamp(address(0), bytes32(0), bytes(""), getBlankOrder()), type(uint256).max);
         assertEq(gat.describeOrder(address(0), bytes32(0), bytes(""), getBlankOrder()), "good-after-time order ready");
+    }
+
+    /// @dev A zero sell amount is rejected at validation
+    function test_generateOrder_RevertZeroAmount() public {
+        GoodAfterTime.Data memory o = _gatTest(bytes(""));
+        o.sellAmount = 0;
+
+        vm.warp(o.startTime);
+        deal(address(o.sellToken), address(safe1), o.minSellBalance);
+
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ZeroAmount.selector));
+        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 }
 

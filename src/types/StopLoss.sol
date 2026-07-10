@@ -19,6 +19,8 @@ error OracleInvalidPrice();
 error OracleStalePrice();
 /// @dev The strike price has not been reached
 error StrikeNotReached();
+/// @dev A zero amount can never nullify: the order would be indefinitely replayable
+error ZeroAmount();
 /// @dev The order validity window has passed
 error OrderExpired();
 
@@ -71,6 +73,10 @@ contract StopLoss is BaseConditionalOrder {
         returns (GPv2Order.Data memory order)
     {
         Data memory data = abi.decode(staticInput, (Data));
+
+        /// @dev A fill-or-kill order with a zero amount never trips the settlement
+        /// replay guard; reject it at the source.
+        require(data.sellAmount > 0 && data.buyAmount > 0, IConditionalOrder.OrderNotValid(ZeroAmount.selector));
         // scope variables to avoid stack too deep error
         {
             /// @dev Guard against expired orders
@@ -82,15 +88,14 @@ contract StopLoss is BaseConditionalOrder {
             (, int256 quotePrice,, uint256 buyUpdatedAt,) = data.buyTokenPriceOracle.latestRoundData();
 
             /// @dev Guard against invalid price data
-            if (!(basePrice > 0 && quotePrice > 0)) {
-                revert IConditionalOrder.OrderNotValid(OracleInvalidPrice.selector);
-            }
+            require(basePrice > 0 && quotePrice > 0, IConditionalOrder.OrderNotValid(OracleInvalidPrice.selector));
 
             /// @dev Guard against stale data at a user-specified interval. The maxTimeSinceLastOracleUpdate should at least exceed the both oracles' update intervals.
-            if (!(sellUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate
-                        && buyUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate)) {
-                revert IConditionalOrder.PollTryNextBlock(OracleStalePrice.selector);
-            }
+            require(
+                sellUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate
+                    && buyUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate,
+                IConditionalOrder.PollTryNextBlock(OracleStalePrice.selector)
+            );
 
             // Normalize the decimals for basePrice and quotePrice, scaling them to 18 decimals
             // Caution: Ensure that base and quote have the same numeraires (e.g. both are denominated in USD)
@@ -98,9 +103,10 @@ contract StopLoss is BaseConditionalOrder {
             quotePrice = Utils.scalePrice(quotePrice, data.buyTokenPriceOracle.decimals(), 18);
 
             /// @dev Scale the strike price to 18 decimals.
-            if (!(basePrice * SCALING_FACTOR / quotePrice <= data.strike)) {
-                revert IConditionalOrder.PollTryNextBlock(StrikeNotReached.selector);
-            }
+            require(
+                basePrice * SCALING_FACTOR / quotePrice <= data.strike,
+                IConditionalOrder.PollTryNextBlock(StrikeNotReached.selector)
+            );
         }
 
         order = GPv2Order.Data(

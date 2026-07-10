@@ -6,6 +6,7 @@ import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.s
 import {
     StopLoss,
     StrikeNotReached,
+    ZeroAmount,
     OracleStalePrice,
     OracleInvalidPrice,
     OrderExpired
@@ -350,5 +351,29 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
     function test_pollHints_SingleShot() public {
         assertEq(stopLoss.getNextPollTimestamp(address(0), bytes32(0), bytes(""), getBlankOrder()), type(uint256).max);
         assertEq(stopLoss.describeOrder(address(0), bytes32(0), bytes(""), getBlankOrder()), "stop-loss triggered");
+    }
+
+    /// @dev A zero sell or buy amount is rejected at validation
+    function test_generateOrder_RevertZeroAmount() public {
+        vm.warp(30 minutes);
+
+        StopLoss.Data memory data = StopLoss.Data({
+            sellToken: mockToken(SELL_TOKEN, DEFAULT_DECIMALS),
+            buyToken: mockToken(BUY_TOKEN, DEFAULT_DECIMALS),
+            sellTokenPriceOracle: mockOracle(SELL_ORACLE, 200 ether, block.timestamp, DEFAULT_DECIMALS),
+            buyTokenPriceOracle: mockOracle(BUY_ORACLE, 100 ether, block.timestamp, DEFAULT_DECIMALS),
+            strike: 1,
+            sellAmount: 0,
+            buyAmount: 1 ether,
+            appData: APP_DATA,
+            receiver: address(0x0),
+            isSellOrder: false,
+            isPartiallyFillable: false,
+            validTo: type(uint32).max,
+            maxTimeSinceLastOracleUpdate: 15 minutes
+        });
+
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ZeroAmount.selector));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 }
