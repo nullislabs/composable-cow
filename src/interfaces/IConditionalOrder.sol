@@ -2,7 +2,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
-import {GPv2Interaction} from "cowprotocol/contracts/libraries/GPv2Interaction.sol";
 import {IERC165} from "safe/interfaces/IERC165.sol";
 
 /**
@@ -32,6 +31,26 @@ interface IConditionalOrder {
         bytes32 salt;
         bytes staticInput;
     }
+
+    /**
+     * Generate the discrete order for the current conditions.
+     * @dev The single source of truth for order derivation, shared by `verify` and
+     *      `IConditionalOrderGenerator.poll`. **MUST** revert with one of the
+     *      conditional-order errors above if the order condition is not met.
+     * @param owner the contract who is the owner of the order
+     * @param sender the `msg.sender` of the parent `isValidSignature` call
+     * @param ctx the context of the order (bytes32(0) if merkle tree is used, otherwise the H(params))
+     * @param staticInput the static input for all discrete orders cut from this conditional order
+     * @param offchainInput dynamic off-chain input for a discrete order cut from this conditional order
+     * @return the discrete order for submission to the CoW Protocol API
+     */
+    function generateOrder(
+        address owner,
+        address sender,
+        bytes32 ctx,
+        bytes calldata staticInput,
+        bytes calldata offchainInput
+    ) external view returns (GPv2Order.Data memory);
 
     /**
      * Verify if a given discrete order is valid.
@@ -64,6 +83,10 @@ interface IConditionalOrder {
 /**
  * @title Conditional Order Generator Interface
  * @author mfw78 <mfw78@rndlabs.xyz>
+ * @notice Adds structured, non-reverting polling for watch-tower integration.
+ * @dev The generator surface carries the handler's *verdict* only. Observed fill
+ *      state is orthogonal and is composed by the registry (`ComposableCoW`),
+ *      never by a handler.
  */
 interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
     /**
@@ -74,20 +97,94 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
     event ConditionalOrderCreated(address indexed owner, IConditionalOrder.ConditionalOrderParams params);
 
     /**
-     * @dev Get a tradeable order that can be posted to the CoW Protocol API and would pass signature validation.
-     *      **MUST** revert if the order condition is not met.
+     * @dev The handler's verdict on whether a discrete order can be posted.
+     *      These are the only values a handler can produce; fill state is
+     *      deliberately not representable here.
+     */
+    enum GeneratorResultCode {
+        POST, // A discrete order is ready to be posted
+        WAIT_TIMESTAMP, // Wait until `waitUntil` (unix timestamp)
+        WAIT_BLOCK, // Wait until `waitUntil` (block number)
+        TRY_NEXT_BLOCK, // Transient condition, retry next block
+        INVALID // Permanently invalid, stop polling
+    }
+
+    /**
+     * @dev Structured result from `poll`.
+     * @param code the handler's verdict
+     * @param order the discrete order; only valid when `code == POST`
+     * @param nextPollTimestamp when to poll for the next discrete order after this
+     *        one is posted; only meaningful when `code == POST`. `0` means poll at
+     *        `order.validTo + 1`; `type(uint256).max` means this is the final order.
+     * @param waitUntil the timestamp (`WAIT_TIMESTAMP`) or block number
+     *        (`WAIT_BLOCK`) to wait for; `0` otherwise
+     * @param reasonCode selector of the handler-declared error behind a non-POST
+     *        verdict; `bytes4(0)` for POST. For a caught `Panic` or `Error(string)`
+     *        this is that built-in's selector - use `tryGenerateOrder` to retrieve
+     *        the complete revert data
+     */
+    struct GeneratorResult {
+        GeneratorResultCode code;
+        GPv2Order.Data order;
+        uint256 nextPollTimestamp;
+        uint256 waitUntil;
+        bytes4 reasonCode;
+    }
+
+    /**
+     * Poll for a discrete order with scheduling metadata.
+     * @dev Called by watch-towers. **MUST NOT** revert for order conditions: the
+     *      conditional-order errors raised by `generateOrder` are decoded into the
+     *      returned verdict instead.
      * @param owner the contract who is the owner of the order
-     * @param sender the `msg.sender` of the parent `isValidSignature` call
+     * @param sender the `msg.sender` of the poll call
      * @param ctx the context of the order (bytes32(0) if merkle tree is used, otherwise the H(params))
      * @param staticInput the static input for all discrete orders cut from this conditional order
      * @param offchainInput dynamic off-chain input for a discrete order cut from this conditional order
-     * @return the tradeable order for submission to the CoW Protocol API
+     * @return result structured verdict with the order (if postable) and scheduling hints
      */
-    function generateOrder(
+    function poll(address owner, address sender, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+        external
+        view
+        returns (GeneratorResult memory result);
+
+    /**
+     * Probe order generation and return the full revert data on failure.
+     * @dev Diagnostic surface for off-chain consumers: unlike `poll`, the complete
+     *      ABI-encoded inner error (including `Panic` sub-codes and unrecognized
+     *      custom errors with their arguments) is returned as ordinary return
+     *      data, avoiding RPC revert-data handling entirely. Never consulted on
+     *      the settlement path.
+     * @return success whether a discrete order was generated
+     * @return order the discrete order (zeroed when `success` is false)
+     * @return revertData the complete ABI-encoded revert data (empty when
+     *         `success` is true)
+     */
+    function tryGenerateOrder(
         address owner,
         address sender,
         bytes32 ctx,
         bytes calldata staticInput,
         bytes calldata offchainInput
-    ) external view returns (GPv2Order.Data memory);
+    ) external view returns (bool success, GPv2Order.Data memory order, bytes memory revertData);
+
+    /**
+     * Get the scheduling hint for the next poll after a successful order.
+     * @dev Only consulted after `generateOrder` succeeds.
+     * @return nextPollTimestamp `0` = poll at `order.validTo + 1`; `type(uint256).max` = stop
+     *         polling after this order; any other value = poll at that timestamp
+     */
+    function getNextPollTimestamp(address owner, bytes32 ctx, bytes calldata staticInput, GPv2Order.Data memory order)
+        external
+        view
+        returns (uint256 nextPollTimestamp);
+
+    /**
+     * Get a human-readable description of the discrete order.
+     * @dev Off-chain UX only; never consulted during settlement.
+     */
+    function describeOrder(address owner, bytes32 ctx, bytes calldata staticInput, GPv2Order.Data memory order)
+        external
+        view
+        returns (string memory description);
 }

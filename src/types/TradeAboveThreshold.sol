@@ -29,7 +29,7 @@ contract TradeAboveThreshold is BaseConditionalOrder {
     }
 
     /**
-     * @inheritdoc IConditionalOrderGenerator
+     * @inheritdoc IConditionalOrder
      * @dev If the `owner`'s balance of `sellToken` is above the specified threshold, sell its entire balance
      * for `buyToken` at the current market price (no limit!).
      */

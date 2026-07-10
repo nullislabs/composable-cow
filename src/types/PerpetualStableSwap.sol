@@ -44,7 +44,7 @@ contract PerpetualStableSwap is BaseConditionalOrder {
     }
 
     /**
-     * @inheritdoc IConditionalOrderGenerator
+     * @inheritdoc IConditionalOrder
      */
     function generateOrder(address owner, address, bytes32, bytes calldata staticInput, bytes calldata)
         public

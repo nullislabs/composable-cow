@@ -32,7 +32,7 @@ contract TWAP is BaseConditionalOrder {
     }
 
     /**
-     * @inheritdoc IConditionalOrderGenerator
+     * @inheritdoc IConditionalOrder
      * @dev `owner`, `sender` and `offchainInput` is not used.
      */
     function generateOrder(address owner, address, bytes32 ctx, bytes calldata staticInput, bytes calldata)
