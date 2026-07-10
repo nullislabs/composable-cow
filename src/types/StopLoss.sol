@@ -58,7 +58,7 @@ contract StopLoss is BaseConditionalOrder {
         uint256 maxTimeSinceLastOracleUpdate;
     }
 
-    function getTradeableOrder(address, address, bytes32, bytes calldata staticInput, bytes calldata)
+    function generateOrder(address, address, bytes32, bytes calldata staticInput, bytes calldata)
         public
         view
         override

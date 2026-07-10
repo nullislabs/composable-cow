@@ -69,7 +69,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
                 STRIKE_NOT_REACHED
             )
         );
-        stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_RevertStrikePriceNotMet_fuzz(
@@ -112,7 +112,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
                 STRIKE_NOT_REACHED
             )
         );
-        stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleNormalisesPrice_fuzz(
@@ -161,7 +161,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         });
 
         GPv2Order.Data memory order =
-            stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -197,7 +197,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         });
 
         GPv2Order.Data memory order =
-            stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -247,7 +247,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
                 ORACLE_STALE_PRICE
             )
         );
-        stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleRevertOnInvalidPrice_fuzz(int256 invalidPrice, int256 validPrice) public {
@@ -276,7 +276,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ORACLE_INVALID_PRICE));
-        stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
 
         // case where buy token price is invalid
 
@@ -284,7 +284,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         data.buyTokenPriceOracle = mockOracle(BUY_ORACLE, invalidPrice, block.timestamp, DEFAULT_DECIMALS);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ORACLE_INVALID_PRICE));
-        stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleRevertOnExpiredOrder_fuzz(
@@ -318,7 +318,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
                 ORDER_EXPIRED
             )
         );
-        stopLoss.getTradeableOrder(
+        stopLoss.generateOrder(
             safe,
             address(0),
             bytes32(0),
@@ -359,7 +359,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         });
 
         GPv2Order.Data memory order =
-            stopLoss.getTradeableOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);

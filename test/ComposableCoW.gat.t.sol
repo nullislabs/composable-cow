@@ -43,7 +43,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
     /**
      * @dev Fuzz test revert on invalid start time
      */
-    function test_getTradeableOrder_FuzzRevertBeforeStartTime(uint256 currentTime, uint256 startTime) public {
+    function test_generateOrder_FuzzRevertBeforeStartTime(uint256 currentTime, uint256 startTime) public {
         // Revert when the start time is before the current time
         vm.assume(currentTime < startTime);
 
@@ -54,14 +54,14 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         vm.warp(currentTime);
 
         // should revert when the current time is before the start time
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryAtEpoch.selector, startTime, TOO_EARLY));
-        gat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryAtTimestamp.selector, startTime, TOO_EARLY));
+        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
     /**
      * @dev Fuzz test revert on balance too low
      */
-    function test_getTradeableOrder_FuzzRevertBelowMinBalance(uint256 currentBalance, uint256 minBalance) public {
+    function test_generateOrder_FuzzRevertBelowMinBalance(uint256 currentBalance, uint256 minBalance) public {
         // Revert when the current balance is below the minimum balance
         vm.assume(currentBalance < minBalance);
 
@@ -81,13 +81,13 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
                 BALANCE_INSUFFICIENT
             )
         );
-        gat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
+        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
     /**
      * @dev Fuzz test revert when oracle supplied buyAmount is less than the price checker
      */
-    function test_getTradeableOrder_FuzzRevertTooLowOutput(
+    function test_generateOrder_FuzzRevertTooLowOutput(
         uint256 buyAmount,
         uint256 expectedOut,
         uint256 allowedSlippage
@@ -116,10 +116,10 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
                 PRICE_CHECKER_FAILED
             )
         );
-        gat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
     }
 
-    function test_getTradeableOrder_FuzzContext(
+    function test_generateOrder_FuzzContext(
         IERC20 buyToken,
         address owner,
         address receiver,
@@ -154,7 +154,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
 
         // This should not revert
         GPv2Order.Data memory order =
-            gat.getTradeableOrder(owner, address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+            gat.generateOrder(owner, address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
 
         GPv2Order.Data memory comparison = GPv2Order.Data({
             sellToken: token0,
@@ -177,7 +177,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         );
     }
 
-    function test_getTradeableOrder_e2e_Fuzz(
+    function test_generateOrder_e2e_Fuzz(
         uint256 currentTime,
         uint256 startTime,
         uint256 endTime,
@@ -219,7 +219,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         );
     }
 
-    function test_getTradeableOrder_e2e_FuzzWithPriceChecker(
+    function test_generateOrder_e2e_FuzzWithPriceChecker(
         uint256 startTime,
         uint256 endTime,
         uint256 buyAmount,
@@ -302,7 +302,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         GPv2Order.Data memory order =
-            gat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+            gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // Verify that the order is valid - this shouldn't revert

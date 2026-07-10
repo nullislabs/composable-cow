@@ -24,7 +24,7 @@ contract ComposableCoWTatTest is BaseComposableCoWTest {
     /**
      * @dev Fuzz test revert on balance too low
      */
-    function test_getTradeableOrder_FuzzRevertBelowThreshold(uint256 currentBalance, uint256 threshold) public {
+    function test_generateOrder_FuzzRevertBelowThreshold(uint256 currentBalance, uint256 threshold) public {
         // Revert when the current balance is below the minimum balance
         vm.assume(currentBalance < threshold);
 
@@ -41,7 +41,7 @@ contract ComposableCoWTatTest is BaseComposableCoWTest {
                 BALANCE_INSUFFICIENT
             )
         );
-        tat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(o), bytes(""));
+        tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     function test_BalanceMet_fuzz(
@@ -71,7 +71,7 @@ contract ComposableCoWTatTest is BaseComposableCoWTest {
 
         // This should not revert
         GPv2Order.Data memory order =
-            tat.getTradeableOrder(address(safe1), address(0), bytes32(0), abi.encode(data), bytes(""));
+            tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(data), bytes(""));
 
 
         assertEq(address(order.sellToken), address(token0));

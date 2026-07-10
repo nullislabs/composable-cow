@@ -260,7 +260,7 @@ contract TestSwapGuard is BaseSwapGuard {
 
 /// @dev A conditional order handler used for testing that returns the GPv2Order passed in as `offchainInput`
 contract TestConditionalOrderGenerator is BaseConditionalOrder {
-    function getTradeableOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
         public
         pure
         override
