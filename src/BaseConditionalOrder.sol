@@ -8,7 +8,8 @@ import {IERC165, IConditionalOrder, IConditionalOrderGenerator} from "./interfac
 // --- error strings
 /// @dev This error is returned by the `verify` function if the *generated* order hash does not match
 ///      the hash passed as a parameter.
-string constant INVALID_HASH = "invalid hash";
+/// @dev The generated order hash does not match the hash passed to `verify`
+error InvalidHash();
 
 /**
  * @title Base logic for conditional orders.
@@ -35,7 +36,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator {
 
         /// @dev Verify that the *generated* order is valid and matches the payload.
         if (!(_hash == GPv2Order.hash(generatedOrder, domainSeparator))) {
-            revert IConditionalOrder.OrderNotValid(INVALID_HASH);
+            revert IConditionalOrder.OrderNotValid(InvalidHash.selector);
         }
     }
 

@@ -13,8 +13,8 @@ import {TWAPOrder} from "./libraries/TWAPOrder.sol";
 
 // --- error strings
 
-/// @dev The order is not within the TWAP bundle's span.
-string constant NOT_WITHIN_SPAN = "not within span";
+/// @dev The current time is outside the active part's span
+error NotWithinSpan();
 
 /**
  * @title TWAP Conditional Order
@@ -61,7 +61,7 @@ contract TWAP is BaseConditionalOrder {
 
         /// @dev Revert if the order is outside the TWAP bundle's span.
         if (!(block.timestamp <= order.validTo)) {
-            revert IConditionalOrder.OrderNotValid(NOT_WITHIN_SPAN);
+            revert IConditionalOrder.OrderNotValid(NotWithinSpan.selector);
         }
     }
 }

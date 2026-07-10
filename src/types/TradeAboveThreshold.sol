@@ -12,8 +12,8 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
 
 // --- error strings
 
-/// @dev The sell token balance is below the threshold (ie. threshold not met).
-string constant BALANCE_INSUFFICIENT = "balance insufficient";
+/// @dev The sell token balance is below the threshold or zero
+error BalanceInsufficient();
 
 /**
  * @title A smart contract that trades whenever its balance of a certain token exceeds a target threshold
@@ -45,7 +45,7 @@ contract TradeAboveThreshold is BaseConditionalOrder {
         uint256 balance = data.sellToken.balanceOf(owner);
         // Don't allow the order to be placed if the balance is less than the threshold.
         if (!(balance >= data.threshold)) {
-            revert IConditionalOrder.PollTryNextBlock(BALANCE_INSUFFICIENT);
+            revert IConditionalOrder.PollTryNextBlock(BalanceInsufficient.selector);
         }
         // ensures that orders queried shortly after one another result in the same hash (to avoid spamming the orderbook)
         order = GPv2Order.Data(

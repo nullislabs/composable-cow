@@ -9,14 +9,22 @@ import {TWAPOrderMathLib} from "./TWAPOrderMathLib.sol";
 
 // --- error strings
 
-string constant INVALID_SAME_TOKEN = "same token";
-string constant INVALID_TOKEN = "invalid token";
-string constant INVALID_PART_SELL_AMOUNT = "invalid part sell amount";
-string constant INVALID_MIN_PART_LIMIT = "invalid min part limit";
-string constant INVALID_START_TIME = "invalid start time";
-string constant INVALID_NUM_PARTS = "invalid num parts";
-string constant INVALID_FREQUENCY = "invalid frequency";
-string constant INVALID_SPAN = "invalid span";
+/// @dev Sell and buy token are identical
+error InvalidSameToken();
+/// @dev A token is the zero address
+error InvalidToken();
+/// @dev The part sell amount is zero
+error InvalidPartSellAmount();
+/// @dev The minimum part limit is zero
+error InvalidMinPartLimit();
+/// @dev The start time does not fit uint32
+error InvalidStartTime();
+/// @dev The number of parts is not in (1, uint32.max]
+error InvalidNumParts();
+/// @dev The frequency is not in (0, 365 days]
+error InvalidFrequency();
+/// @dev The span exceeds the frequency
+error InvalidSpan();
 
 /**
  * @title Time-weighted Average Order Library
@@ -48,16 +56,18 @@ library TWAPOrder {
      * @param self The TWAP order to validate
      */
     function validate(Data memory self) internal pure {
-        if (!(self.sellToken != self.buyToken)) revert IConditionalOrder.OrderNotValid(INVALID_SAME_TOKEN);
+        if (!(self.sellToken != self.buyToken)) revert IConditionalOrder.OrderNotValid(InvalidSameToken.selector);
         if (!(address(self.sellToken) != address(0) && address(self.buyToken) != address(0))) {
-            revert IConditionalOrder.OrderNotValid(INVALID_TOKEN);
+            revert IConditionalOrder.OrderNotValid(InvalidToken.selector);
         }
-        if (!(self.partSellAmount > 0)) revert IConditionalOrder.OrderNotValid(INVALID_PART_SELL_AMOUNT);
-        if (!(self.minPartLimit > 0)) revert IConditionalOrder.OrderNotValid(INVALID_MIN_PART_LIMIT);
-        if (!(self.t0 < type(uint32).max)) revert IConditionalOrder.OrderNotValid(INVALID_START_TIME);
-        if (!(self.n > 1 && self.n <= type(uint32).max)) revert IConditionalOrder.OrderNotValid(INVALID_NUM_PARTS);
-        if (!(self.t > 0 && self.t <= 365 days)) revert IConditionalOrder.OrderNotValid(INVALID_FREQUENCY);
-        if (!(self.span <= self.t)) revert IConditionalOrder.OrderNotValid(INVALID_SPAN);
+        if (!(self.partSellAmount > 0)) revert IConditionalOrder.OrderNotValid(InvalidPartSellAmount.selector);
+        if (!(self.minPartLimit > 0)) revert IConditionalOrder.OrderNotValid(InvalidMinPartLimit.selector);
+        if (!(self.t0 < type(uint32).max)) revert IConditionalOrder.OrderNotValid(InvalidStartTime.selector);
+        if (!(self.n > 1 && self.n <= type(uint32).max)) {
+            revert IConditionalOrder.OrderNotValid(InvalidNumParts.selector);
+        }
+        if (!(self.t > 0 && self.t <= 365 days)) revert IConditionalOrder.OrderNotValid(InvalidFrequency.selector);
+        if (!(self.span <= self.t)) revert IConditionalOrder.OrderNotValid(InvalidSpan.selector);
     }
 
     /**

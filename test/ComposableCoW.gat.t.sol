@@ -17,9 +17,9 @@ import {
 import {
     IExpectedOutCalculator,
     GoodAfterTime,
-    TOO_EARLY,
-    BALANCE_INSUFFICIENT,
-    PRICE_CHECKER_FAILED
+    TooEarly,
+    BalanceInsufficient,
+    PriceCheckerFailed
 } from "../src/types/GoodAfterTime.sol";
 
 contract ComposableCoWGatTest is BaseComposableCoWTest {
@@ -54,7 +54,9 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         vm.warp(currentTime);
 
         // should revert when the current time is before the start time
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryAtTimestamp.selector, startTime, TOO_EARLY));
+        vm.expectRevert(
+            abi.encodeWithSelector(IConditionalOrder.PollTryAtTimestamp.selector, startTime, TooEarly.selector)
+        );
         gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
@@ -75,31 +77,22 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         deal(address(o.sellToken), address(safe1), currentBalance);
 
         // should revert when the current balance is below the minimum balance
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.OrderNotValid.selector,
-                BALANCE_INSUFFICIENT
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, BalanceInsufficient.selector));
         gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
     /**
      * @dev Fuzz test revert when oracle supplied buyAmount is less than the price checker
      */
-    function test_generateOrder_FuzzRevertTooLowOutput(
-        uint256 buyAmount,
-        uint256 expectedOut,
-        uint256 allowedSlippage
-    ) public {
+    function test_generateOrder_FuzzRevertTooLowOutput(uint256 buyAmount, uint256 expectedOut, uint256 allowedSlippage)
+        public
+    {
         vm.assume(expectedOut < type(uint256).max / 10000);
         allowedSlippage = bound(allowedSlippage, 0, 10000);
         vm.assume(buyAmount < expectedOut * (10000 - allowedSlippage) / 10000);
 
         GoodAfterTime.PriceCheckerPayload memory checker = GoodAfterTime.PriceCheckerPayload({
-            checker: testOutCalculator,
-            payload: abi.encode(expectedOut),
-            allowedSlippage: allowedSlippage
+            checker: testOutCalculator, payload: abi.encode(expectedOut), allowedSlippage: allowedSlippage
         });
 
         GoodAfterTime.Data memory o = _gatTest(abi.encode(checker));
@@ -111,10 +104,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.PollTryNextBlock.selector,
-                PRICE_CHECKER_FAILED
-            )
+            abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, PriceCheckerFailed.selector)
         );
         gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
     }
@@ -236,9 +226,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
 
         // Create the price checker payload
         GoodAfterTime.PriceCheckerPayload memory checker = GoodAfterTime.PriceCheckerPayload({
-            checker: testOutCalculator,
-            payload: abi.encode(expectedOut),
-            allowedSlippage: allowedSlippage
+            checker: testOutCalculator, payload: abi.encode(expectedOut), allowedSlippage: allowedSlippage
         });
 
         // Create the order payload
@@ -286,9 +274,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
 
         // Create the price checker payload
         GoodAfterTime.PriceCheckerPayload memory checker = GoodAfterTime.PriceCheckerPayload({
-            checker: testOutCalculator,
-            payload: abi.encode(expectedOut),
-            allowedSlippage: allowedSlippage
+            checker: testOutCalculator, payload: abi.encode(expectedOut), allowedSlippage: allowedSlippage
         });
 
         // Create the order payload
@@ -323,8 +309,9 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
      */
     function test_settle_e2e() public {
         // Create the price checker payload
-        GoodAfterTime.PriceCheckerPayload memory checker =
-            GoodAfterTime.PriceCheckerPayload({checker: testOutCalculator, payload: abi.encode(1), allowedSlippage: 50});
+        GoodAfterTime.PriceCheckerPayload memory checker = GoodAfterTime.PriceCheckerPayload({
+            checker: testOutCalculator, payload: abi.encode(1), allowedSlippage: 50
+        });
 
         // Create the order payload
         GoodAfterTime.Data memory o = _gatTest(abi.encode(checker));

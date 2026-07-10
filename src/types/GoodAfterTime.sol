@@ -8,12 +8,12 @@ import {IERC20, IConditionalOrder, GPv2Order, BaseConditionalOrder} from "../Bas
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
-/// @dev If the trade is called before the time it becomes valid.
-string constant TOO_EARLY = "too early";
-/// @dev If the sell token balance is below the minimum.
-string constant BALANCE_INSUFFICIENT = "balance insufficient";
-/// @dev If the price checker fails.
-string constant PRICE_CHECKER_FAILED = "price checker failed";
+/// @dev The start time has not been reached
+error TooEarly();
+/// @dev The sell token balance is below minSellBalance
+error BalanceInsufficient();
+/// @dev The buy amount is below the price checker minimum
+error PriceCheckerFailed();
 
 /**
  * @title Good After Time (GAT) Conditional Order - with Milkman price checkers
@@ -50,24 +50,23 @@ contract GoodAfterTime is BaseConditionalOrder {
         uint256 allowedSlippage; // in basis points
     }
 
-    function generateOrder(
-        address owner,
-        address,
-        bytes32,
-        bytes calldata staticInput,
-        bytes calldata offchainInput
-    ) public view override returns (GPv2Order.Data memory order) {
+    function generateOrder(address owner, address, bytes32, bytes calldata staticInput, bytes calldata offchainInput)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory order)
+    {
         // Decode the payload into the good after time parameters.
         Data memory data = abi.decode(staticInput, (Data));
 
         // Don't allow the order to be placed before it becomes valid.
         if (!(block.timestamp >= data.startTime)) {
-            revert IConditionalOrder.PollTryAtTimestamp(data.startTime, TOO_EARLY);
+            revert IConditionalOrder.PollTryAtTimestamp(data.startTime, TooEarly.selector);
         }
 
         // Require that the sell token balance is above the minimum.
         if (!(data.sellToken.balanceOf(owner) >= data.minSellBalance)) {
-            revert IConditionalOrder.OrderNotValid(BALANCE_INSUFFICIENT);
+            revert IConditionalOrder.OrderNotValid(BalanceInsufficient.selector);
         }
 
         uint256 buyAmount = abi.decode(offchainInput, (uint256));
@@ -82,7 +81,7 @@ contract GoodAfterTime is BaseConditionalOrder {
 
             // Don't allow the order to be placed if the buyAmount is less than the minimum out.
             if (!(buyAmount >= (_expectedOut * (Utils.MAX_BPS - p.allowedSlippage)) / Utils.MAX_BPS)) {
-                revert IConditionalOrder.PollTryNextBlock(PRICE_CHECKER_FAILED);
+                revert IConditionalOrder.PollTryNextBlock(PriceCheckerFailed.selector);
             }
         }
 

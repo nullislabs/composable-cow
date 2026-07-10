@@ -3,7 +3,13 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {IERC20, GPv2Order, IConditionalOrder, BaseComposableCoWTest} from "./ComposableCoW.base.t.sol";
 import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
-import {StopLoss, STRIKE_NOT_REACHED, ORACLE_STALE_PRICE, ORACLE_INVALID_PRICE, ORDER_EXPIRED} from "../src/types/StopLoss.sol";
+import {
+    StopLoss,
+    StrikeNotReached,
+    OracleStalePrice,
+    OracleInvalidPrice,
+    OrderExpired
+} from "../src/types/StopLoss.sol";
 
 contract ComposableCoWStopLossTest is BaseComposableCoWTest {
     IERC20 immutable SELL_TOKEN = IERC20(address(0x1));
@@ -63,12 +69,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
 
         createOrder(stopLoss, 0x0, abi.encode(data));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.PollTryNextBlock.selector,
-                STRIKE_NOT_REACHED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, StrikeNotReached.selector));
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
@@ -106,12 +107,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: staleTime
         });
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.PollTryNextBlock.selector,
-                STRIKE_NOT_REACHED
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, StrikeNotReached.selector));
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
@@ -144,11 +140,9 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             ),
             strike: int256(
                 1900
-                    * (
-                        sellTokenERC20Decimals > buyTokenERC20Decimals
+                    * (sellTokenERC20Decimals > buyTokenERC20Decimals
                             ? (10 ** (sellTokenERC20Decimals - buyTokenERC20Decimals + 18))
-                            : (10 ** (buyTokenERC20Decimals - sellTokenERC20Decimals + 18))
-                    )
+                            : (10 ** (buyTokenERC20Decimals - sellTokenERC20Decimals + 18)))
             ), // Strike price is to 18 decimals, base / quote. ie. 1900_000_000_000_000_000_000 = 1900 USDC/ETH
             sellAmount: 1 ether,
             buyAmount: 1,
@@ -160,8 +154,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order =
-            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -196,8 +189,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order =
-            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -241,12 +233,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: maxTimeSinceLastOracleUpdate
         });
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.PollTryNextBlock.selector,
-                ORACLE_STALE_PRICE
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, OracleStalePrice.selector));
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
@@ -275,7 +262,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ORACLE_INVALID_PRICE));
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OracleInvalidPrice.selector));
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
 
         // case where buy token price is invalid
@@ -283,14 +270,11 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
         data.sellTokenPriceOracle = mockOracle(SELL_ORACLE, validPrice, block.timestamp, DEFAULT_DECIMALS);
         data.buyTokenPriceOracle = mockOracle(BUY_ORACLE, invalidPrice, block.timestamp, DEFAULT_DECIMALS);
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ORACLE_INVALID_PRICE));
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OracleInvalidPrice.selector));
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
-    function test_OracleRevertOnExpiredOrder_fuzz(
-        uint32 currentTime,
-        uint32 validTo
-    ) public {
+    function test_OracleRevertOnExpiredOrder_fuzz(uint32 currentTime, uint32 validTo) public {
         // enforce expired order
         vm.assume(currentTime > validTo);
 
@@ -312,19 +296,8 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IConditionalOrder.OrderNotValid.selector,
-                ORDER_EXPIRED
-            )
-        );
-        stopLoss.generateOrder(
-            safe,
-            address(0),
-            bytes32(0),
-            abi.encode(data),
-            bytes("")
-        );
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OrderExpired.selector));
+        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_strikePriceMet_fuzz(
@@ -358,8 +331,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order =
-            stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
