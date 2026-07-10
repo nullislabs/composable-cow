@@ -11,7 +11,13 @@ import {TestAccount, TestAccountLib} from "./libraries/TestAccountLib.t.sol";
 import {SafeLib} from "./libraries/SafeLib.t.sol";
 import {ComposableCoWLib} from "./libraries/ComposableCoWLib.t.sol";
 
-import {IConditionalOrder, IERC20, BaseConditionalOrder, InvalidHash} from "../src/BaseConditionalOrder.sol";
+import {
+    IConditionalOrder,
+    IConditionalOrderGenerator,
+    IERC20,
+    BaseConditionalOrder,
+    InvalidHash
+} from "../src/BaseConditionalOrder.sol";
 import {BaseSwapGuard} from "../src/guards/BaseSwapGuard.sol";
 
 import {TWAP, TWAPOrder} from "../src/types/twap/TWAP.sol";
@@ -273,6 +279,19 @@ contract TestNonSafeWallet is ERC1271Forwarder {
 
 /// @dev A conditional order handler used for testing that reverts on verify
 contract MirrorConditionalOrder is IConditionalOrder {
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        external
+        pure
+        override
+        returns (GPv2Order.Data memory)
+    {
+        // use assembly to set the return data to calldata
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            revert(0, calldatasize())
+        }
+    }
+
     function verify(
         address,
         address,
@@ -288,5 +307,141 @@ contract MirrorConditionalOrder is IConditionalOrder {
             calldatacopy(0, 0, calldatasize())
             revert(0, calldatasize())
         }
+    }
+}
+
+/// @dev Test handler that throws OrderNotValid from generateOrder
+contract OrderNotValidHandler is BaseConditionalOrder {
+    bytes4 public reasonCode;
+
+    constructor(bytes4 _reasonCode) {
+        reasonCode = _reasonCode;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        revert IConditionalOrder.OrderNotValid(reasonCode);
+    }
+}
+
+/// @dev Test handler that throws PollTryNextBlock from generateOrder
+contract PollTryNextBlockHandler is BaseConditionalOrder {
+    bytes4 public reasonCode;
+
+    constructor(bytes4 _reasonCode) {
+        reasonCode = _reasonCode;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        revert IConditionalOrder.PollTryNextBlock(reasonCode);
+    }
+}
+
+/// @dev Test handler that throws PollTryAtTimestamp from generateOrder
+contract PollTryAtTimestampHandler is BaseConditionalOrder {
+    uint256 public timestamp;
+    bytes4 public reasonCode;
+
+    constructor(uint256 _timestamp, bytes4 _reasonCode) {
+        timestamp = _timestamp;
+        reasonCode = _reasonCode;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        revert IConditionalOrder.PollTryAtTimestamp(timestamp, reasonCode);
+    }
+}
+
+/// @dev Test handler that throws PollTryAtBlock from generateOrder
+contract PollTryAtBlockHandler is BaseConditionalOrder {
+    uint256 public blockNum;
+    bytes4 public reasonCode;
+
+    constructor(uint256 _blockNum, bytes4 _reasonCode) {
+        blockNum = _blockNum;
+        reasonCode = _reasonCode;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        revert IConditionalOrder.PollTryAtBlock(blockNum, reasonCode);
+    }
+}
+
+/// @dev Test handler that returns a configurable order from generateOrder
+contract SuccessHandler is BaseConditionalOrder {
+    GPv2Order.Data public order;
+
+    function setOrder(GPv2Order.Data memory _order) external {
+        order = _order;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        return order;
+    }
+}
+
+/// @dev Test handler whose generateOrder hits an arithmetic Panic (division by zero)
+contract PanicHandler is BaseConditionalOrder {
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+        public
+        pure
+        override
+        returns (GPv2Order.Data memory)
+    {
+        uint256 divisor = offchainInput.length; // zero when called with empty input
+        uint256 x = 1 / divisor;
+        x; // silence unused warning
+        return _emptyOrder();
+    }
+}
+
+/// @dev Test handler whose generateOrder fails a bare require (Error(string))
+contract RequireFailHandler is BaseConditionalOrder {
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        pure
+        override
+        returns (GPv2Order.Data memory)
+    {
+        require(false, "plain require failure");
+        return _emptyOrder();
+    }
+}
+
+/// @dev Test handler whose generateOrder reverts with an unrecognized custom error
+contract UnknownErrorHandler is BaseConditionalOrder {
+    error SomethingUnexpected(uint256 code);
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+        public
+        pure
+        override
+        returns (GPv2Order.Data memory)
+    {
+        revert SomethingUnexpected(42);
     }
 }
