@@ -8,6 +8,7 @@ import {
     IConditionalOrderGenerator,
     BaseConditionalOrder
 } from "../BaseConditionalOrder.sol";
+import {IOrderManifest} from "../interfaces/IOrderManifest.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
@@ -59,9 +60,7 @@ contract PerpetualStableSwap is BaseConditionalOrder {
         BuySellData memory buySellData = side(owner, data);
 
         // Make sure the order is funded, otherwise it is not valid
-        if (!(buySellData.sellAmount > 0)) {
-            revert IConditionalOrder.OrderNotValid(NotFunded.selector);
-        }
+        require(buySellData.sellAmount > 0, IConditionalOrder.OrderNotValid(NotFunded.selector));
 
         // Unless spread is 0 (and there is no surplus), order collision is not an issue as sell and buy amounts should
         // increase for each subsequent order. We therefore set validity to a large time span
@@ -124,6 +123,58 @@ contract PerpetualStableSwap is BaseConditionalOrder {
             destAmount = srcAmount / (10 ** (srcDecimals - destDecimals));
         } else {
             destAmount = srcAmount * (10 ** (destDecimals - srcDecimals));
+        }
+    }
+
+    // --- IOrderManifest
+
+    /**
+     * @inheritdoc IOrderManifest
+     * @dev Perpetual: no meaningful count.
+     */
+    function getManifestInfo(address, bytes32, bytes calldata)
+        external
+        pure
+        override
+        returns (ManifestInfo memory info)
+    {
+        info = ManifestInfo({cardinality: Cardinality.UNBOUNDED, totalOrders: 0});
+    }
+
+    /**
+     * @inheritdoc IOrderManifest
+     * @dev UNBOUNDED pagination contract: only index 0 (the current discrete
+     *      order) is ever exposed and every branch terminates pagination, so a
+     *      consumer walking `offset += entries.length` until `hasMore == false`
+     *      cannot loop forever.
+     */
+    function getManifestPage(
+        address owner,
+        bytes32 ctx,
+        bytes calldata staticInput,
+        bytes calldata offchainInput,
+        uint256 offset,
+        uint256 limit
+    ) external view override returns (ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) {
+        // Only index 0 exists: out-of-range pages are empty and terminal
+        if (offset > 0 || limit == 0) {
+            return (new ManifestEntry[](0), false, bytes4(0));
+        }
+
+        try this.generateOrder(owner, address(0), ctx, staticInput, offchainInput) returns (
+            GPv2Order.Data memory order
+        ) {
+            entries = new ManifestEntry[](1);
+            entries[0] = ManifestEntry({
+                index: 0, // Always 0 for unbounded (current order)
+                order: order,
+                validFrom: 0, // Valid immediately
+                isActive: block.timestamp <= order.validTo
+            });
+            return (entries, false, bytes4(0));
+        } catch (bytes memory errorData) {
+            // e.g. not funded: empty page, terminated, with the decoded reason
+            return (new ManifestEntry[](0), false, _decodeErrorToGeneratorResult(errorData).reasonCode);
         }
     }
 }
