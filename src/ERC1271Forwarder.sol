@@ -30,9 +30,7 @@ abstract contract ERC1271Forwarder is ERC1271 {
         (GPv2Order.Data memory order, ComposableCoW.PayloadStruct memory payload) =
             abi.decode(signature, (GPv2Order.Data, ComposableCoW.PayloadStruct));
         bytes32 domainSeparator = composableCoW.domainSeparator();
-        if (!(GPv2Order.hash(order, domainSeparator) == _hash)) {
-            revert InvalidHash();
-        }
+        require(GPv2Order.hash(order, domainSeparator) == _hash, InvalidHash());
 
         return composableCoW.isValidSafeSignature(
             Safe(payable(address(this))), // owner

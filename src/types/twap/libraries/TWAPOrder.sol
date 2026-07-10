@@ -56,18 +56,17 @@ library TWAPOrder {
      * @param self The TWAP order to validate
      */
     function validate(Data memory self) internal pure {
-        if (!(self.sellToken != self.buyToken)) revert IConditionalOrder.OrderNotValid(InvalidSameToken.selector);
-        if (!(address(self.sellToken) != address(0) && address(self.buyToken) != address(0))) {
-            revert IConditionalOrder.OrderNotValid(InvalidToken.selector);
-        }
-        if (!(self.partSellAmount > 0)) revert IConditionalOrder.OrderNotValid(InvalidPartSellAmount.selector);
-        if (!(self.minPartLimit > 0)) revert IConditionalOrder.OrderNotValid(InvalidMinPartLimit.selector);
-        if (!(self.t0 < type(uint32).max)) revert IConditionalOrder.OrderNotValid(InvalidStartTime.selector);
-        if (!(self.n > 1 && self.n <= type(uint32).max)) {
-            revert IConditionalOrder.OrderNotValid(InvalidNumParts.selector);
-        }
-        if (!(self.t > 0 && self.t <= 365 days)) revert IConditionalOrder.OrderNotValid(InvalidFrequency.selector);
-        if (!(self.span <= self.t)) revert IConditionalOrder.OrderNotValid(InvalidSpan.selector);
+        require(self.sellToken != self.buyToken, IConditionalOrder.OrderNotValid(InvalidSameToken.selector));
+        require(
+            address(self.sellToken) != address(0) && address(self.buyToken) != address(0),
+            IConditionalOrder.OrderNotValid(InvalidToken.selector)
+        );
+        require(self.partSellAmount > 0, IConditionalOrder.OrderNotValid(InvalidPartSellAmount.selector));
+        require(self.minPartLimit > 0, IConditionalOrder.OrderNotValid(InvalidMinPartLimit.selector));
+        require(self.t0 < type(uint32).max, IConditionalOrder.OrderNotValid(InvalidStartTime.selector));
+        require(self.n > 1 && self.n <= type(uint32).max, IConditionalOrder.OrderNotValid(InvalidNumParts.selector));
+        require(self.t > 0 && self.t <= 365 days, IConditionalOrder.OrderNotValid(InvalidFrequency.selector));
+        require(self.span <= self.t, IConditionalOrder.OrderNotValid(InvalidSpan.selector));
     }
 
     /**
