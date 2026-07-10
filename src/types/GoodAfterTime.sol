@@ -4,7 +4,13 @@ pragma solidity >=0.8.0 <0.9.0;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IExpectedOutCalculator} from "../vendored/Milkman.sol";
-import {IERC20, IConditionalOrder, GPv2Order, BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {
+    IERC20,
+    IConditionalOrder,
+    IConditionalOrderGenerator,
+    GPv2Order,
+    BaseConditionalOrder
+} from "../BaseConditionalOrder.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
@@ -99,5 +105,30 @@ contract GoodAfterTime is BaseConditionalOrder {
             GPv2Order.BALANCE_ERC20,
             GPv2Order.BALANCE_ERC20
         );
+    }
+
+    /**
+     * @inheritdoc IConditionalOrderGenerator
+     * @dev Single-shot order: once it fills there is nothing further to poll for.
+     */
+    function getNextPollTimestamp(address, bytes32, bytes calldata, GPv2Order.Data memory)
+        external
+        pure
+        override
+        returns (uint256)
+    {
+        return POLL_NEVER;
+    }
+
+    /**
+     * @inheritdoc IConditionalOrderGenerator
+     */
+    function describeOrder(address, bytes32, bytes calldata, GPv2Order.Data memory)
+        external
+        pure
+        override
+        returns (string memory)
+    {
+        return "good-after-time order ready";
     }
 }

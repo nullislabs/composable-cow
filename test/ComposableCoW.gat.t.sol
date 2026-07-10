@@ -367,6 +367,12 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
             appData: keccak256("GoodAfterTime")
         });
     }
+
+    /// @dev Single-shot: stop polling after fill, and a descriptive reason
+    function test_pollHints_SingleShot() public {
+        assertEq(gat.getNextPollTimestamp(address(0), bytes32(0), bytes(""), getBlankOrder()), type(uint256).max);
+        assertEq(gat.describeOrder(address(0), bytes32(0), bytes(""), getBlankOrder()), "good-after-time order ready");
+    }
 }
 
 /// @dev A test implementation that returns what we tell it to..

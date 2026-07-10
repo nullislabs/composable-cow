@@ -199,7 +199,9 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         // Warp to current time
         vm.warp(currentTime);
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, BeforeTwapStart.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(IConditionalOrder.PollTryAtTimestamp.selector, startTime, BeforeTwapStart.selector)
+        );
         twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
@@ -253,7 +255,16 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         // Warp to outside of the span
         vm.warp(currentTime);
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, NotWithinSpan.selector));
+        uint256 nextPartStart = startTime + (((currentTime - startTime) / FREQUENCY + 1) * FREQUENCY);
+        if (nextPartStart < startTime + (FREQUENCY * NUM_PARTS)) {
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    IConditionalOrder.PollTryAtTimestamp.selector, nextPartStart, NotWithinSpan.selector
+                )
+            );
+        } else {
+            vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, AfterTwapFinish.selector));
+        }
         twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
@@ -280,12 +291,15 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
         // Warp to the current time
         vm.warp(currentTime);
 
-        // The below should return the terminal INVALID verdict
-        (ComposableCoW.PollResult memory invalidRes, bytes memory invalidSig) =
+        // The below should return a WAIT_TIMESTAMP verdict pointing at the start
+        (ComposableCoW.PollResult memory waitRes, bytes memory waitSig) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
-        assertEq(uint256(invalidRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
-        assertEq(invalidRes.generator.reasonCode, BeforeTwapStart.selector);
-        assertEq(invalidSig.length, 0);
+        assertEq(
+            uint256(waitRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_TIMESTAMP)
+        );
+        assertEq(waitRes.generator.waitUntil, ctxBlockTimestamp);
+        assertEq(waitRes.generator.reasonCode, BeforeTwapStart.selector);
+        assertEq(waitSig.length, 0);
     }
 
     function test_generateOrder_FuzzRevertIfOrderAfterBlocktimestampValidity(
@@ -684,5 +698,36 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
             span: SPAN,
             appData: keccak256("test.twap")
         });
+    }
+
+    /// @dev getNextPollTimestamp points at the next part while parts remain
+    function test_getNextPollTimestamp_PointsAtNextPart() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+
+        // Within the first part
+        vm.warp(o.t0);
+        uint256 nextPoll = twap.getNextPollTimestamp(address(0), bytes32(0), abi.encode(o), getBlankOrder());
+        assertEq(nextPoll, o.t0 + o.t);
+    }
+
+    /// @dev getNextPollTimestamp signals POLL_NEVER on the final part
+    function test_getNextPollTimestamp_FinalPartStopsPolling() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+
+        // Warp into the final part
+        vm.warp(o.t0 + (o.n - 1) * o.t);
+        uint256 nextPoll = twap.getNextPollTimestamp(address(0), bytes32(0), abi.encode(o), getBlankOrder());
+        assertEq(nextPoll, type(uint256).max);
+    }
+
+    /// @dev describeOrder distinguishes the final part
+    function test_describeOrder_TwapParts() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+
+        vm.warp(o.t0);
+        assertEq(twap.describeOrder(address(0), bytes32(0), abi.encode(o), getBlankOrder()), "twap part ready");
+
+        vm.warp(o.t0 + (o.n - 1) * o.t);
+        assertEq(twap.describeOrder(address(0), bytes32(0), abi.encode(o), getBlankOrder()), "final twap part");
     }
 }
