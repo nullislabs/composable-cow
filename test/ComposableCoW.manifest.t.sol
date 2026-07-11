@@ -37,7 +37,7 @@ contract ComposableCoWManifestTest is BaseComposableCoWTest {
     function setUp() public virtual override(BaseComposableCoWTest) {
         super.setUp();
 
-        perpetualSwap = new PerpetualStableSwap();
+        perpetualSwap = new PerpetualStableSwap(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
         currentBlockTimestampFactory = new CurrentBlockTimestampFactory();
     }
 

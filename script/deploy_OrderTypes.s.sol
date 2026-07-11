@@ -16,9 +16,9 @@ contract DeployOrderTypes is Script {
         address composableCow = vm.envAddress("COMPOSABLE_COW");
         vm.startBroadcast(deployerPrivateKey);
 
-        new TWAP(ComposableCoW(composableCow));
-        new GoodAfterTime();
-        new PerpetualStableSwap();
+        new TWAP(ComposableCoW(composableCow), new string[](0), bytes32(0));
+        new GoodAfterTime(new string[](0), bytes32(0));
+        new PerpetualStableSwap(new string[](0), bytes32(0));
         new TradeAboveThreshold();
 
         vm.stopBroadcast();

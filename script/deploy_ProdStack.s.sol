@@ -33,11 +33,11 @@ contract DeployProdStack is Script {
         ComposableCoW composableCow = new ComposableCoW{salt: "v1.0.0"}(settlement);
 
         // Deploy order types
-        new TWAP{salt: "v1.0.0"}(composableCow);
-        new GoodAfterTime{salt: "v1.0.0"}();
-        new PerpetualStableSwap{salt: "v1.0.0"}();
+        new TWAP{salt: "v1.0.0"}(composableCow, new string[](0), bytes32(0));
+        new GoodAfterTime{salt: "v1.0.0"}(new string[](0), bytes32(0));
+        new PerpetualStableSwap{salt: "v1.0.0"}(new string[](0), bytes32(0));
         new TradeAboveThreshold{salt: "v1.0.0"}();
-        new StopLoss{salt: "v1.0.0"}();
+        new StopLoss{salt: "v1.0.0"}(new string[](0), bytes32(0));
 
         // Deploy value factories
         new CurrentBlockTimestampFactory{salt: "v1.0.0"}();

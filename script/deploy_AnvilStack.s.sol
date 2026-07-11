@@ -61,9 +61,9 @@ contract DeployAnvilStack is Script {
 
         // deploy the Composable CoW
         ComposableCoW composableCow = new ComposableCoW(address(settlement));
-        new TWAP(composableCow);
-        new GoodAfterTime();
-        new PerpetualStableSwap();
+        new TWAP(composableCow, new string[](0), bytes32(0));
+        new GoodAfterTime(new string[](0), bytes32(0));
+        new PerpetualStableSwap(new string[](0), bytes32(0));
         new TradeAboveThreshold();
 
         vm.stopBroadcast();
