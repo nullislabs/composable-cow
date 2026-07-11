@@ -9,6 +9,7 @@ import {
     BaseComposableCoWTest,
     InvalidHash,
     OrderNotValidHandler,
+    NeedsOffchainInputHandler,
     PollTryNextBlockHandler,
     PollTryAtTimestampHandler,
     PollTryAtBlockHandler,
@@ -17,12 +18,14 @@ import {
     RequireFailHandler,
     UnknownErrorHandler
 } from "./ComposableCoW.base.t.sol";
+import {OffchainInputRequired} from "../src/interfaces/IConditionalOrder.sol";
 
 /// @dev Test reason errors, as a handler would declare them
 error TestOrderInvalid();
 error TestTryNextBlock();
 error TestWaitTimestamp();
 error TestWaitBlock();
+error TestTriggerPriceRequired();
 
 /// @title Tests for poll() verdicts and error decoding in BaseConditionalOrder
 contract ComposableCoWPollTest is BaseComposableCoWTest {
@@ -42,6 +45,48 @@ contract ComposableCoWPollTest is BaseComposableCoWTest {
         assertEq(result.reasonCode, expectedReason);
         assertEq(result.waitUntil, 0);
         assertEq(result.nextPollTimestamp, 0);
+    }
+
+    /// @dev PollNeedsOffchainInput decodes to the NEEDS_INPUT verdict: not a
+    ///      timed retry - the caller must acquire input or park
+    function test_poll_DecodesPollNeedsOffchainInput() public {
+        bytes4 expectedReason = TestTriggerPriceRequired.selector;
+        NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(expectedReason);
+
+        IConditionalOrderGenerator.GeneratorResult memory result =
+            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+
+        assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.NEEDS_INPUT));
+        assertEq(result.reasonCode, expectedReason);
+        assertEq(result.waitUntil, 0);
+        assertEq(result.nextPollTimestamp, 0);
+    }
+
+    /// @dev The same handler generates once offchainInput is supplied - the
+    ///      NEEDS_INPUT verdict is about the missing input, not the order
+    function test_poll_NeedsInputHandlerPostsWithInput() public {
+        NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(TestTriggerPriceRequired.selector);
+
+        IConditionalOrderGenerator.GeneratorResult memory result =
+            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes("trigger"));
+
+        assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(result.reasonCode, bytes4(0));
+    }
+
+    /// @dev The canonical OffchainInputRequired reason round-trips the probe:
+    ///      tryGenerateOrder surfaces the full PollNeedsOffchainInput revert
+    function test_tryGenerateOrder_NeedsInputRevertData() public {
+        NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(OffchainInputRequired.selector);
+
+        (bool success,, bytes memory revertData) =
+            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+
+        assertFalse(success);
+        assertEq(
+            revertData,
+            abi.encodeWithSelector(IConditionalOrder.PollNeedsOffchainInput.selector, OffchainInputRequired.selector)
+        );
     }
 
     /// @dev PollTryNextBlock decodes to the TRY_NEXT_BLOCK verdict

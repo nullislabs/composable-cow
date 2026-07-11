@@ -352,6 +352,39 @@ contract PollTryNextBlockHandler is BaseConditionalOrder {
 }
 
 /// @dev Test handler that throws PollTryAtTimestamp from generateOrder
+/// @dev Test handler that requires non-empty offchainInput: reverts
+///      PollNeedsOffchainInput when polled empty, generates when supplied.
+contract NeedsOffchainInputHandler is BaseConditionalOrder {
+    bytes4 public reasonCode;
+
+    constructor(bytes4 _reasonCode) {
+        reasonCode = _reasonCode;
+    }
+
+    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+        public
+        view
+        override
+        returns (GPv2Order.Data memory)
+    {
+        require(offchainInput.length > 0, IConditionalOrder.PollNeedsOffchainInput(reasonCode));
+        return GPv2Order.Data({
+            sellToken: IERC20(address(0)),
+            buyToken: IERC20(address(0)),
+            receiver: address(0),
+            sellAmount: 0,
+            buyAmount: 0,
+            validTo: 0,
+            appData: keccak256(offchainInput),
+            feeAmount: 0,
+            kind: GPv2Order.KIND_SELL,
+            partiallyFillable: false,
+            sellTokenBalance: GPv2Order.BALANCE_ERC20,
+            buyTokenBalance: GPv2Order.BALANCE_ERC20
+        });
+    }
+}
+
 contract PollTryAtTimestampHandler is BaseConditionalOrder {
     uint256 public timestamp;
     bytes4 public reasonCode;

@@ -195,7 +195,9 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
     /**
      * @dev Decode revert data from `generateOrder` into a `GeneratorResult`.
      *
-     *      Only `OrderNotValid` maps to the terminal `INVALID` verdict. Unrecognized
+     *      Only `OrderNotValid` maps to the terminal `INVALID` verdict.
+     *      `PollNeedsOffchainInput` maps to `NEEDS_INPUT` (acquire input or park,
+     *      never a timed retry). Unrecognized
      *      reverts - including `Panic` and `Error(string)` - map to `TRY_NEXT_BLOCK`
      *      so a transient or recoverable fault reschedules rather than permanently
      *      killing the order off-chain. The `reasonCode` carries the selector of
@@ -236,6 +238,15 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
             if (selector == IConditionalOrder.PollTryAtBlock.selector) {
                 (uint256 blockNum, bytes4 reasonCode) = _decodeUintBytes4Error(errorData);
                 return _verdict(IConditionalOrderGenerator.GeneratorResultCode.WAIT_BLOCK, blockNum, reasonCode);
+            }
+
+            // PollNeedsOffchainInput(bytes4): not a timed retry - the caller
+            // must acquire non-empty offchainInput or park the order
+            if (selector == IConditionalOrder.PollNeedsOffchainInput.selector) {
+                return
+                    _verdict(
+                        IConditionalOrderGenerator.GeneratorResultCode.NEEDS_INPUT, 0, _decodeBytes4Error(errorData)
+                    );
             }
 
             // Anything else - Panic, Error(string), or an unrecognized custom
