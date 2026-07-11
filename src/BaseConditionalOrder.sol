@@ -12,7 +12,7 @@ error InvalidHash();
 /**
  * @title Base logic for conditional orders.
  * @dev Provides the dual-path plumbing: a lean `verify` for the settlement path and a
- *      structured, non-reverting `poll` for watch-towers, both derived from one
+ *      structured, non-reverting `poll` for monitoring services, both derived from one
  *      `generateOrder` implementation.
  * @author mfw78 <mfw78@rndlabs.xyz>
  */
