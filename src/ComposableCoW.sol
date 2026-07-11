@@ -66,10 +66,25 @@ contract ComposableCoW is ISafeSignatureVerifier {
      * @param filledAmount raw `GPv2Settlement.filledAmount` for the discrete
      *        order (`type(uint256).max` when invalidated)
      */
+    /**
+     * @dev Registry-level restriction overlay. Like the fill overlay, this is
+     *      orthogonal to the handler's verdict and never overwrites it: a
+     *      restricted order keeps its true generator verdict (a guarded POST
+     *      stays visible) but no signature is built while restricted. With
+     *      restriction expressed here, `INVALID` is uniformly terminal - the
+     *      swap guard is owner-reversible and its lifecycle is observable via
+     *      `SwapGuardSet` (clear = address(0)).
+     */
+    enum Restriction {
+        NONE, // No registry-level restriction
+        SWAP_GUARD // The owner's swap guard rejected the order
+    }
+
     struct PollResult {
         IConditionalOrderGenerator.GeneratorResult generator;
         FillStatus fill;
         uint256 filledAmount;
+        Restriction restriction;
     }
 
     // --- events
@@ -292,10 +307,9 @@ contract ComposableCoW is ISafeSignatureVerifier {
             return (result, bytes(""));
         }
 
-        // Check with the swap guard if the order is restricted or not
-        if (!_guardCheck(owner, ctx, params, offchainInput, result.generator.order)) {
-            result.generator.code = IConditionalOrderGenerator.GeneratorResultCode.INVALID;
-            result.generator.reasonCode = SwapGuardRestricted.selector;
+        // A restricted order is never signed; the generator verdict is
+        // preserved in the result (restriction is an overlay, not a verdict)
+        if (result.restriction != Restriction.NONE) {
             return (result, bytes(""));
         }
 
@@ -305,8 +319,9 @@ contract ComposableCoW is ISafeSignatureVerifier {
     /**
      * Check the current polling state of a conditional order
      * @dev Returns the same composed result as `getTradeableOrderWithSignature`,
-     *      without building the signature. Note the swap guard is not consulted
-     *      here; it is enforced at signature build time and during settlement.
+     *      without building the signature. The swap guard is consulted and
+     *      reported via `restriction`; enforcement (signature withheld, revert
+     *      at settlement) happens at signature build and during `verify`.
      * @param owner of the order
      * @param params `ConditionalOrderParams` for the order
      * @param offchainInput any dynamic off-chain input for generating the discrete order
@@ -384,8 +399,11 @@ contract ComposableCoW is ISafeSignatureVerifier {
         result.generator = IConditionalOrderGenerator(address(params.handler))
             .poll(owner, msg.sender, ctx, params.staticInput, offchainInput);
 
-        // The fill overlay is only meaningful for a postable order
+        // The fill and restriction overlays are only meaningful for a postable order
         if (result.generator.code == IConditionalOrderGenerator.GeneratorResultCode.POST) {
+            if (!_guardCheck(owner, ctx, params, offchainInput, result.generator.order)) {
+                result.restriction = Restriction.SWAP_GUARD;
+            }
             uint256 filledAmount = _getFilledAmount(owner, result.generator.order);
             result.filledAmount = filledAmount;
             if (filledAmount == 0) {
