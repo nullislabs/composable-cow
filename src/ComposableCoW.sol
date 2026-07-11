@@ -23,6 +23,10 @@ import {CoWSettlement} from "./vendored/CoWSettlement.sol";
 contract ComposableCoW is ISafeSignatureVerifier {
     // --- errors
     error ProofNotAuthed();
+    /// @dev A zero root (explicit clear) must carry an empty proof
+    error ProofDataMalformed();
+    /// @dev A listed blob versioned hash is not attached to this transaction
+    error BlobNotAttached();
     error SingleOrderNotAuthed();
     error SwapGuardRestricted();
     error InvalidHandler();
@@ -38,10 +42,20 @@ contract ComposableCoW is ISafeSignatureVerifier {
         bytes offchainInput;
     }
 
-    // A struct representing where to find the proofs
+    /**
+     * @dev Where to find the merkle payload document (the complete leaf set,
+     *      see `docs/discovery.md` §3). Two orthogonal publication channels,
+     *      each optional:
+     *      - `uris`: mirrors for the payload document; all URIs MUST reference
+     *        the same bytes. Never interpreted on-chain.
+     *      - `blobVersionedHashes`: EIP-4844 blobs carrying the payload. Every
+     *        listed hash is verified attached to THIS transaction, binding
+     *        publication to authorization.
+     *      Both empty = private: no discovery is expected.
+     */
     struct Proof {
-        uint256 location;
-        bytes data;
+        string[] uris;
+        bytes32[] blobVersionedHashes;
     }
 
     /**
@@ -355,8 +369,31 @@ contract ComposableCoW is ISafeSignatureVerifier {
      * @dev Write the root and emit, carrying the resolved cabinet context
      */
     function _setRoot(bytes32 root, Proof calldata proof, bytes memory context) internal {
+        if (root == bytes32(0)) {
+            // Explicit clear: a zero root authorizes no leaf; publishing a
+            // payload for it is malformed
+            require(proof.uris.length == 0 && proof.blobVersionedHashes.length == 0, ProofDataMalformed());
+        }
+        // Publication is atomic with authorization: every listed blob must be
+        // attached to the transaction setting the root
+        for (uint256 i = 0; i < proof.blobVersionedHashes.length; i++) {
+            require(_blobAttached(proof.blobVersionedHashes[i]), BlobNotAttached());
+        }
         roots[msg.sender] = root;
         emit MerkleRootSet(msg.sender, root, proof, context);
+    }
+
+    /**
+     * @dev True iff `versionedHash` is among this transaction's blob hashes.
+     *      `blobhash(i)` returns zero past the last blob, and a real versioned
+     *      hash can never be zero (it always begins with the 0x01 version byte).
+     */
+    function _blobAttached(bytes32 versionedHash) internal view returns (bool) {
+        for (uint256 i;; i++) {
+            bytes32 h = blobhash(i);
+            if (h == bytes32(0)) return false;
+            if (h == versionedHash) return true;
+        }
     }
 
     /**
