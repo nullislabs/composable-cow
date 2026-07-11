@@ -75,7 +75,7 @@ contract BaseComposableCoWTest is Base, Merkle {
         passThrough = new TestConditionalOrderGenerator();
         mirror = new MirrorConditionalOrder();
 
-        twap = new TWAP(composableCow);
+        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
     }
 
     /// @dev Ensure `ComposableCoW` contract is the `ISafeSignatureVerifier` for `safe1` on the `settlement` domain
@@ -166,6 +166,14 @@ contract BaseComposableCoWTest is Base, Merkle {
             // ensure that the context was cleared
             assertEq(composableCow.cabinet(owner, orderHash), bytes32(0));
         }
+    }
+
+    /// @dev A committed test descriptor: a data: URI and the digest of its bytes
+    bytes32 internal constant TEST_DESCRIPTOR_DIGEST = keccak256('{"version":"1","name":"test"}');
+
+    function testDescriptorUris() internal pure returns (string[] memory uris) {
+        uris = new string[](1);
+        uris[0] = 'data:application/json,{"version":"1","name":"test"}';
     }
 
     function getBlankOrder() internal pure returns (GPv2Order.Data memory order) {

@@ -10,6 +10,7 @@ import {
 } from "../BaseConditionalOrder.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
+import {OrderDescriptor} from "../OrderDescriptor.sol";
 
 // --- error strings
 
@@ -30,7 +31,11 @@ error OrderExpired();
  * @notice Both oracles need to be denominated in the same quote currency (e.g. GNO/ETH and USD/ETH for GNO/USD stop loss orders)
  * @dev This order type has replay protection due to the `validTo` parameter, ensuring it will just execute one time
  */
-contract StopLoss is BaseConditionalOrder {
+contract StopLoss is OrderDescriptor {
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_)
+        OrderDescriptor(descriptorUris, descriptorDigest_)
+    {}
+
     /// @dev Scaling factor for the strike price
     int256 constant SCALING_FACTOR = 10 ** 18;
 
