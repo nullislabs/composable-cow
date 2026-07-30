@@ -45,9 +45,9 @@ abstract contract CoWProtocol is Test, Tokens {
      */
     function setUp() public virtual {
         // cowprotocol test accounts
-        /// @dev the admin account is used to deploy the vault and allow list manager
+        // the admin account is used to deploy the vault and allow list manager
         admin = TestAccountLib.createTestAccount("admin");
-        /// @dev the solver account simulates a solver in the allow list
+        // the solver account simulates a solver in the allow list
         solver = TestAccountLib.createTestAccount("solver");
 
         vault = IVault(makeAddr("fakeVault"));
@@ -56,10 +56,10 @@ abstract contract CoWProtocol is Test, Tokens {
         GPv2AllowListAuthentication allowList = new GPv2AllowListAuthentication();
         allowList.initializeManager(admin.addr);
 
-        /// @dev the settlement contract is the main entry point for the CoW Protocol
+        // the settlement contract is the main entry point for the CoW Protocol
         settlement = new GPv2Settlement(allowList, vault);
 
-        /// @dev the relayer is the account authorized to spend the user's tokens
+        // the relayer is the account authorized to spend the user's tokens
         relayer = address(settlement.vaultRelayer());
 
         // authorize the solver

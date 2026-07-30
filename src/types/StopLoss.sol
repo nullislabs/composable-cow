@@ -92,12 +92,14 @@ contract StopLoss is OrderDescriptor {
     {
         Data memory data = abi.decode(staticInput, (Data));
 
-        /// @dev A fill-or-kill order with a zero amount never trips the settlement
-        /// replay guard; reject it at the source.
+        /*
+         * A fill-or-kill order with a zero amount never trips the settlement
+         * replay guard; reject it at the source.
+         */
         require(data.sellAmount > 0 && data.buyAmount > 0, IConditionalOrder.OrderNotValid(ZeroAmount.selector));
         // scope variables to avoid stack too deep error
         {
-            /// @dev Guard against expired orders
+            // Guard against expired orders
             if (data.validTo < block.timestamp) {
                 revert IConditionalOrder.OrderNotValid(OrderExpired.selector);
             }
@@ -105,10 +107,10 @@ contract StopLoss is OrderDescriptor {
             (, int256 basePrice,, uint256 sellUpdatedAt,) = data.sellTokenPriceOracle.latestRoundData();
             (, int256 quotePrice,, uint256 buyUpdatedAt,) = data.buyTokenPriceOracle.latestRoundData();
 
-            /// @dev Guard against invalid price data
+            // Guard against invalid price data
             require(basePrice > 0 && quotePrice > 0, IConditionalOrder.OrderNotValid(OracleInvalidPrice.selector));
 
-            /// @dev Guard against stale data at a user-specified interval. The maxTimeSinceLastOracleUpdate should at least exceed the both oracles' update intervals.
+            // Guard against stale data at a user-specified interval. The maxTimeSinceLastOracleUpdate should at least exceed the both oracles' update intervals.
             require(
                 sellUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate
                     && buyUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate,
@@ -120,7 +122,7 @@ contract StopLoss is OrderDescriptor {
             basePrice = Utils.scalePrice(basePrice, data.sellTokenPriceOracle.decimals(), 18);
             quotePrice = Utils.scalePrice(quotePrice, data.buyTokenPriceOracle.decimals(), 18);
 
-            /// @dev Scale the strike price to 18 decimals.
+            // Scale the strike price to 18 decimals.
             require(
                 basePrice * SCALING_FACTOR / quotePrice <= data.strike,
                 IConditionalOrderGenerator.PollTryNextBlock(StrikeNotReached.selector)

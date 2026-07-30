@@ -82,8 +82,10 @@ contract GoodAfterTime is OrderDescriptor {
         // Decode the payload into the good after time parameters.
         Data memory data = abi.decode(staticInput, (Data));
 
-        /// @dev A fill-or-kill order with a zero sell amount never trips the
-        /// settlement replay guard; reject it at the source.
+        /*
+         * A fill-or-kill order with a zero sell amount never trips the
+         * settlement replay guard; reject it at the source.
+         */
         require(data.sellAmount > 0, IConditionalOrder.OrderNotValid(ZeroAmount.selector));
 
         // Don't allow the order to be placed before it becomes valid.
