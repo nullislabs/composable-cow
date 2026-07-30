@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IERC20, GPv2Order, IConditionalOrder, BaseComposableCowTest} from "./ComposableCow.base.t.sol";
+import {
+    IERC20,
+    GPv2Order,
+    IConditionalOrder,
+    BaseComposableCowTest,
+    IConditionalOrderGenerator
+} from "./ComposableCow.base.t.sol";
 import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {
     StopLoss,
@@ -69,7 +75,9 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
 
         createOrder(stopLoss, 0x0, abi.encode(data));
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, StrikeNotReached.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, StrikeNotReached.selector)
+        );
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
@@ -107,7 +115,9 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
             maxTimeSinceLastOracleUpdate: staleTime
         });
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, StrikeNotReached.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, StrikeNotReached.selector)
+        );
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 
@@ -233,7 +243,9 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
             maxTimeSinceLastOracleUpdate: maxTimeSinceLastOracleUpdate
         });
 
-        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, OracleStalePrice.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, OracleStalePrice.selector)
+        );
         stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
     }
 

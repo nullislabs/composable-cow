@@ -4,7 +4,13 @@ pragma solidity >=0.8.0 <0.9.0;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IExpectedOutCalculator} from "../vendored/Milkman.sol";
-import {IERC20, IConditionalOrder, GPv2Order, BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {
+    IERC20,
+    IConditionalOrder,
+    GPv2Order,
+    BaseConditionalOrder,
+    IConditionalOrderGenerator
+} from "../BaseConditionalOrder.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
@@ -67,7 +73,7 @@ contract GoodAfterTime is BaseConditionalOrder {
 
         // Don't allow the order to be placed before it becomes valid.
         if (!(block.timestamp >= data.startTime)) {
-            revert IConditionalOrder.PollTryAtTimestamp(data.startTime, TooEarly.selector);
+            revert IConditionalOrderGenerator.PollTryAtTimestamp(data.startTime, TooEarly.selector);
         }
 
         // Require that the sell token balance is above the minimum.
@@ -87,7 +93,7 @@ contract GoodAfterTime is BaseConditionalOrder {
 
             // Don't allow the order to be placed if the buyAmount is less than the minimum out.
             if (!(buyAmount >= (_expectedOut * (Utils.MAX_BPS - p.allowedSlippage)) / Utils.MAX_BPS)) {
-                revert IConditionalOrder.PollTryNextBlock(PriceCheckerFailed.selector);
+                revert IConditionalOrderGenerator.PollTryNextBlock(PriceCheckerFailed.selector);
             }
         }
 

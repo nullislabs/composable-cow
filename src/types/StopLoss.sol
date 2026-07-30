@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IERC20, GPv2Order, IConditionalOrder, BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {
+    IERC20,
+    GPv2Order,
+    IConditionalOrder,
+    BaseConditionalOrder,
+    IConditionalOrderGenerator
+} from "../BaseConditionalOrder.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
@@ -93,7 +99,7 @@ contract StopLoss is BaseConditionalOrder {
             /// @dev Guard against stale data at a user-specified interval. The maxTimeSinceLastOracleUpdate should at least exceed the both oracles' update intervals.
             if (!(sellUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate
                         && buyUpdatedAt >= block.timestamp - data.maxTimeSinceLastOracleUpdate)) {
-                revert IConditionalOrder.PollTryNextBlock(OracleStalePrice.selector);
+                revert IConditionalOrderGenerator.PollTryNextBlock(OracleStalePrice.selector);
             }
 
             // Normalize the decimals for basePrice and quotePrice, scaling them to 18 decimals
@@ -103,7 +109,7 @@ contract StopLoss is BaseConditionalOrder {
 
             /// @dev Scale the strike price to 18 decimals.
             if (!(basePrice * SCALING_FACTOR / quotePrice <= data.strike)) {
-                revert IConditionalOrder.PollTryNextBlock(StrikeNotReached.selector);
+                revert IConditionalOrderGenerator.PollTryNextBlock(StrikeNotReached.selector);
             }
         }
 
