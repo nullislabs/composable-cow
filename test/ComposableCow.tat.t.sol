@@ -36,7 +36,7 @@ contract ComposableCowTatTest is BaseComposableCowTest {
 
         // should revert when the current balance is below the minimum balance
         vm.expectRevert(
-            abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, BalanceInsufficient.selector)
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, BalanceInsufficient.selector)
         );
         tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), bytes(""));
     }

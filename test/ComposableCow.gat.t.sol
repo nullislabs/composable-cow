@@ -11,7 +11,8 @@ import {
     SafeLib,
     BaseComposableCowTest,
     ComposableCow,
-    ComposableCowLib
+    ComposableCowLib,
+    IConditionalOrderGenerator
 } from "./ComposableCow.base.t.sol";
 
 import {
@@ -55,7 +56,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
 
         // should revert when the current time is before the start time
         vm.expectRevert(
-            abi.encodeWithSelector(IConditionalOrder.PollTryAtTimestamp.selector, startTime, TooEarly.selector)
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryAtTimestamp.selector, startTime, TooEarly.selector)
         );
         gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
@@ -104,7 +105,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         vm.expectRevert(
-            abi.encodeWithSelector(IConditionalOrder.PollTryNextBlock.selector, PriceCheckerFailed.selector)
+            abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, PriceCheckerFailed.selector)
         );
         gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
     }
