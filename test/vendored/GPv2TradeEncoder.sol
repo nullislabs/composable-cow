@@ -8,7 +8,7 @@ import {GPv2Signing} from "cowprotocol/contracts/mixins/GPv2Signing.sol";
 
 /**
  * @title Gnosis Protocol v2 Trade Library.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @dev This library provides functions for encoding trade flags
  * Encoding methodology is adapted from upstream at
  * https://github.com/cowprotocol/contracts/blob/d043b0bfac7a09463c74dfe1613d0612744ed91c/src/contracts/libraries/GPv2Trade.sol

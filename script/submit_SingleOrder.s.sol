@@ -21,7 +21,7 @@ import {TWAP, TWAPOrder} from "../src/types/twap/TWAP.sol";
 
 /**
  * @title Submit a single order to ComposableCoW
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 contract SubmitSingleOrder is Script {
     using SafeLib for Safe;

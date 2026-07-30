@@ -8,7 +8,7 @@ import {ComposableCoW} from "./ComposableCoW.sol";
 
 /**
  * @title ERC1271 Forwarder - An abstract contract that implements ERC1271 forwarding to ComposableCoW
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @dev Designed to be extended from by a contract that wants to use ComposableCoW
  */
 abstract contract ERC1271Forwarder is ERC1271 {

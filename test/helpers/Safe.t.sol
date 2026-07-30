@@ -14,7 +14,7 @@ import {TestAccount, TestAccountLib} from "../libraries/TestAccountLib.t.sol";
 
 /**
  * @title Safe - A helper contract for local integration testing with `Safe`.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 abstract contract SafeHelper {
     using SafeLib for Safe;

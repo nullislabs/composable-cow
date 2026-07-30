@@ -17,7 +17,7 @@ string constant AFTER_TWAP_FINISH = "after twap finish";
 /**
  * @title CoWProtocol TWAP Order Math Library
  * @dev TWAP Math is separated to facilitate easier unit testing / SMT verification.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 library TWAPOrderMathLib {
     /**

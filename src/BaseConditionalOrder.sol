@@ -16,7 +16,7 @@ string constant INVALID_HASH = "invalid hash";
  * @title Base logic for conditional orders.
  * @dev Enforces the order verification logic for conditional orders, allowing developers
  *      to focus on the logic for generating the tradeable order.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 abstract contract BaseConditionalOrder is IConditionalOrderGenerator {
     /**

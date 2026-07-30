@@ -6,7 +6,7 @@ import {IValueFactory} from "../interfaces/IValueFactory.sol";
 /**
  * @title CurrentBlockTimestampFactory - An on-chain value factory that returns the current block timestamp
  * @dev Designed to be used with Safe + ExtensibleFallbackHandler + ComposableCoW
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 contract CurrentBlockTimestampFactory is IValueFactory {
     function getValue(bytes calldata) external view override returns (bytes32) {

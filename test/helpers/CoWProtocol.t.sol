@@ -21,7 +21,7 @@ import {Tokens} from "./Tokens.t.sol";
 
 /**
  * @title CoW Protocol - A helper contract for local integration testing with CoW Protocol.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 abstract contract CoWProtocol is Test, Tokens {
     using TestAccountLib for TestAccount;

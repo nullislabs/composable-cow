@@ -20,7 +20,7 @@ string constant INVALID_SPAN = "invalid span";
 
 /**
  * @title Time-weighted Average Order Library
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @dev Structs, errors, and functions for time-weighted average orders.
  */
 library TWAPOrder {

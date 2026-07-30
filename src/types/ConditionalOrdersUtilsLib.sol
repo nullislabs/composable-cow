@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 /**
  * @title ConditionalOrdersUtilsLib - Utility functions for standardising conditional orders.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 library ConditionalOrdersUtilsLib {
     uint256 constant MAX_BPS = 10000;

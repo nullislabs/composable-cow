@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 /**
  * @title IValueFactory - An interface for on-chain value determination
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @dev Designed to be used with Safe + ExtensibleFallbackHandler + ComposableCoW
  */
 interface IValueFactory {
