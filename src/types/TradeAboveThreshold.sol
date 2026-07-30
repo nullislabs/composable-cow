@@ -13,7 +13,7 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
 // --- error strings
 
 /**
- * @dev The sell token balance is below the threshold or zero
+ * @dev The sell token balance is below the required minimum or zero
  */
 error BalanceInsufficient();
 
@@ -45,10 +45,12 @@ contract TradeAboveThreshold is BaseConditionalOrder {
         TradeAboveThreshold.Data memory data = abi.decode(staticInput, (Data));
 
         uint256 balance = data.sellToken.balanceOf(owner);
-        // Don't allow the order to be placed if the balance is less than the threshold.
-        if (!(balance >= data.threshold)) {
-            revert IConditionalOrderGenerator.PollTryNextBlock(BalanceInsufficient.selector);
-        }
+        // Don't allow the order to be placed if the balance is less than the threshold,
+        // or zero: a zero sell amount never trips the settlement replay guard.
+        require(
+            balance >= data.threshold && balance > 0,
+            IConditionalOrderGenerator.PollTryNextBlock(BalanceInsufficient.selector)
+        );
         // ensures that orders queried shortly after one another result in the same hash (to avoid spamming the orderbook)
         order = GPv2Order.Data(
             data.sellToken,

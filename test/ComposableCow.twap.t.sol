@@ -164,6 +164,35 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
     }
 
     /**
+     * @dev The scheduling and description paths do not reach `orderFor`, so they
+     *      validate the bundle themselves. `t == 0` would otherwise divide by zero
+     *      in `currentPart`.
+     */
+    function test_getNextPollTimestamp_RevertOnZeroFrequency() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+        o.t = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidFrequency.selector));
+        twap.getNextPollTimestamp(address(0), bytes32(0), abi.encode(o), getBlankOrder());
+    }
+
+    function test_describeOrder_RevertOnZeroFrequency() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+        o.t = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidFrequency.selector));
+        twap.describeOrder(address(0), bytes32(0), abi.encode(o), getBlankOrder());
+    }
+
+    function test_getNextPollTimestamp_RevertOnZeroNumParts() public {
+        TWAPOrder.Data memory o = _twapTestBundle(block.timestamp);
+        o.n = 0;
+
+        vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidNumParts.selector));
+        twap.getNextPollTimestamp(address(0), bytes32(0), abi.encode(o), getBlankOrder());
+    }
+
+    /**
      * @dev Fuzz test revert on invalid span
      */
     function test_generateOrder_FuzzRevertOnInvalidSpan(uint256 frequency, uint256 span) public {
@@ -342,8 +371,9 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         vm.assume(currentTime < type(uint32).max);
         // guard against revert before start
         vm.assume(_blockTimestamp < currentTime);
-        // guard against revert after expiry
-        vm.assume(currentTime < _blockTimestamp + (FREQUENCY * NUM_PARTS));
+        // guard against revert after expiry. Widened: `_blockTimestamp` is a
+        // uint32, so the sum overflows for timestamps near the type maximum.
+        vm.assume(currentTime < uint256(_blockTimestamp) + (uint256(FREQUENCY) * NUM_PARTS));
         // guard against reversion outside of the span
         vm.assume((currentTime - _blockTimestamp) % FREQUENCY < SPAN);
 
@@ -479,17 +509,12 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
      * @param span The span of the TWAP order
      */
     function test_simulate_fuzz(uint32 numParts, uint32 frequency, uint32 span) public {
-        // guard against underflows
-        vm.assume(span < frequency);
-        // guard against reversions
-        numParts = uint32(bound(numParts, 2, type(uint32).max));
-        frequency = uint32(bound(frequency, 120, type(uint32).max));
-        // provide some sane limits to avoid out of gas on test issues
-        vm.assume(
-            span == 0
-                ? uint256(numParts) * uint256(frequency) < 1 hours
-                : uint256(numParts) * uint256(span) + (uint256(numParts) * uint256(frequency - span) * 3) < 4 hours
-        );
+        // Construct the bundle within a bounded envelope: every simulated second
+        // is an external call whose returndata accumulates in test memory, so the
+        // total simulated time must stay small to avoid memory exhaustion.
+        numParts = uint32(bound(numParts, 2, 6));
+        frequency = uint32(bound(frequency, 120, 900 / numParts));
+        span = uint32(bound(span, 0, frequency - 1));
 
         // Assemble the TWAP bundle
         TWAPOrder.Data memory bundle = _twapTestBundle(block.timestamp);

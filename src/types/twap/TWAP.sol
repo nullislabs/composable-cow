@@ -82,6 +82,7 @@ contract TWAP is BaseConditionalOrder {
         returns (uint256)
     {
         TWAPOrder.Data memory twap = _resolveTwapData(owner, ctx, staticInput);
+        TWAPOrder.validate(twap);
         uint256 part = _currentPart(twap);
 
         // Last part - stop polling after this fills. Written as `part + 1 >= n`
@@ -104,6 +105,7 @@ contract TWAP is BaseConditionalOrder {
         returns (string memory)
     {
         TWAPOrder.Data memory twap = _resolveTwapData(owner, ctx, staticInput);
+        TWAPOrder.validate(twap);
         uint256 part = _currentPart(twap);
 
         if (part + 1 >= twap.n) {
@@ -133,7 +135,8 @@ contract TWAP is BaseConditionalOrder {
     }
 
     /**
-     * @dev Get the current part index from block.timestamp
+     * @dev Get the current part index from block.timestamp. `twap.t` is a divisor,
+     *      so callers MUST have validated the bundle.
      */
     function _currentPart(TWAPOrder.Data memory twap) internal view returns (uint256) {
         return TWAPOrderMathLib.currentPart(twap.t0, twap.t);
