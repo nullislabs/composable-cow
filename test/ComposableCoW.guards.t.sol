@@ -20,7 +20,9 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         super.setUp();
     }
 
-    /// @dev Can set and remove a swap guard
+    /**
+     * @dev Can set and remove a swap guard
+     */
     function test_setSwapGuard_FuzzSetAndEmit(address owner, address swapGuard) public {
         // address(0) is the no-op swap guard
         vm.assume(swapGuard != address(0));
@@ -90,7 +92,9 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         _setSwapGuard(address(safe1), ISwapGuard(address(0)));
     }
 
-    /// @dev `BaseSwapGuard` should support the appropriate interfaces
+    /**
+     * @dev `BaseSwapGuard` should support the appropriate interfaces
+     */
     function test_BaseSwapGuard_supportsInterface() public {
         ReceiverLock lock = new ReceiverLock();
 
@@ -98,7 +102,9 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         assertEq(lock.supportsInterface(type(IERC165).interfaceId), true);
     }
 
-    /// @dev `ReceiverLock` should revert if the receiver is not the safe
+    /**
+     * @dev `ReceiverLock` should revert if the receiver is not the safe
+     */
     function test_ReceiverLock_verify_FuzzRevertsWhenReceiverNotSelf(address receiver) public {
         // address(0) is used to indicate self as the receiver, so we can't use it here
         vm.assume(receiver != address(0));

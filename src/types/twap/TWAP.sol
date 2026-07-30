@@ -13,7 +13,9 @@ import {TWAPOrder} from "./libraries/TWAPOrder.sol";
 
 // --- error strings
 
-/// @dev The order is not within the TWAP bundle's span.
+/**
+ * @dev The order is not within the TWAP bundle's span.
+ */
 string constant NOT_WITHIN_SPAN = "not within span";
 
 /**

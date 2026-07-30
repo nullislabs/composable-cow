@@ -8,11 +8,17 @@ import {IERC20, IConditionalOrder, GPv2Order, BaseConditionalOrder} from "../Bas
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
-/// @dev If the trade is called before the time it becomes valid.
+/**
+ * @dev If the trade is called before the time it becomes valid.
+ */
 string constant TOO_EARLY = "too early";
-/// @dev If the sell token balance is below the minimum.
+/**
+ * @dev If the sell token balance is below the minimum.
+ */
 string constant BALANCE_INSUFFICIENT = "balance insufficient";
-/// @dev If the price checker fails.
+/**
+ * @dev If the price checker fails.
+ */
 string constant PRICE_CHECKER_FAILED = "price checker failed";
 
 /**

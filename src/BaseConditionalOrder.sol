@@ -6,8 +6,10 @@ import {GPv2Order, IERC20} from "cowprotocol/contracts/libraries/GPv2Order.sol";
 import {IERC165, IConditionalOrder, IConditionalOrderGenerator} from "./interfaces/IConditionalOrder.sol";
 
 // --- error strings
-/// @dev This error is returned by the `verify` function if the *generated* order hash does not match
-///      the hash passed as a parameter.
+/**
+ * @dev This error is returned by the `verify` function if the *generated* order hash does not match
+ *      the hash passed as a parameter.
+ */
 string constant INVALID_HASH = "invalid hash";
 
 /**

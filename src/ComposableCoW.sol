@@ -54,9 +54,13 @@ contract ComposableCoW is ISafeSignatureVerifier {
     // --- state
     // Domain separator is only used for generating signatures
     bytes32 public immutable domainSeparator;
-    /// @dev Mapping of owner's merkle roots
+    /**
+     * @dev Mapping of owner's merkle roots
+     */
     mapping(address => bytes32) public roots;
-    /// @dev Mapping of owner's single orders
+    /**
+     * @dev Mapping of owner's single orders
+     */
     mapping(address => mapping(bytes32 => bool)) public singleOrders;
     // @dev Mapping of owner's swap guard
     mapping(address => ISwapGuard) public swapGuards;

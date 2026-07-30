@@ -15,7 +15,9 @@ contract ComposableCoWForwarderTest is BaseComposableCoWTest {
         super.setUp();
     }
 
-    /// @dev `ERC1271Forwarder` should revert on hash mismatch
+    /**
+     * @dev `ERC1271Forwarder` should revert on hash mismatch
+     */
     function test_ERC1271Forwarder_isValidSignature_RevertsOnBadHash() public {
         TestNonSafeWallet nonSafe = new TestNonSafeWallet(address(composableCow));
         IConditionalOrder.ConditionalOrderParams memory params = getPassthroughOrder();

@@ -15,11 +15,13 @@ library SafeLib {
     using TestAccountLib for TestAccount[];
     using TestAccountLib for TestAccount;
 
-    /// @dev Creates a new Gnosis Safe proxy with the provided owners and
-    /// threshold.
-    /// @param owners The list of owners of the Gnosis Safe.
-    /// @param threshold The number of owners required to confirm a transaction.
-    /// @return safe The Gnosis Safe proxy.
+    /**
+     * @dev Creates a new Gnosis Safe proxy with the provided owners and
+     * threshold.
+     * @param owners The list of owners of the Gnosis Safe.
+     * @param threshold The number of owners required to confirm a transaction.
+     * @return safe The Gnosis Safe proxy.
+     */
     function createSafe(
         SafeProxyFactory factory,
         Safe singleton,
