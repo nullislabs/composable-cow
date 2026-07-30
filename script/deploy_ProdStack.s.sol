@@ -6,8 +6,8 @@ import {Script} from "forge-std/Script.sol";
 // ExtensibleFallbackHandler
 import {ExtensibleFallbackHandler} from "../lib/safe/contracts/handler/ExtensibleFallbackHandler.sol";
 
-// ComposableCoW
-import {ComposableCoW} from "../src/ComposableCoW.sol";
+// ComposableCow
+import {ComposableCow} from "../src/ComposableCow.sol";
 
 // Order types
 import {TWAP} from "../src/types/twap/TWAP.sol";
@@ -29,8 +29,8 @@ contract DeployProdStack is Script {
         // Deploy ExtensibleFallbackHandler
         new ExtensibleFallbackHandler{salt: "v1.0.0"}();
 
-        // Deploy ComposableCoW
-        ComposableCoW composableCow = new ComposableCoW{salt: "v1.0.0"}(settlement);
+        // Deploy ComposableCow
+        ComposableCow composableCow = new ComposableCow{salt: "v1.0.0"}(settlement);
 
         // Deploy order types
         new TWAP{salt: "v1.0.0"}(composableCow);

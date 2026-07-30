@@ -16,11 +16,11 @@ import {IValueFactory} from "./interfaces/IValueFactory.sol";
 import {CoWSettlement} from "./vendored/CoWSettlement.sol";
 
 /**
- * @title ComposableCoW - A contract that allows users to create multiple conditional orders
+ * @title ComposableCow - A contract that allows users to create multiple conditional orders
  * @author mfw78 <mfw78@nxm.rs>
  * @dev Designed to be used with Safe + ExtensibleFallbackHandler
  */
-contract ComposableCoW is ISafeSignatureVerifier {
+contract ComposableCow is ISafeSignatureVerifier {
     // --- errors
     error ProofNotAuthed();
     error SingleOrderNotAuthed();

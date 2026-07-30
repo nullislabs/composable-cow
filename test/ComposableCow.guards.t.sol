@@ -7,15 +7,15 @@ import {
     IERC165,
     IConditionalOrder,
     GPv2Order,
-    ComposableCoW,
-    BaseComposableCoWTest,
+    ComposableCow,
+    BaseComposableCowTest,
     ISwapGuard,
     TestSwapGuard,
     ReceiverLock
-} from "./ComposableCoW.base.t.sol";
+} from "./ComposableCow.base.t.sol";
 
-contract ComposableCoWGuardsTest is BaseComposableCoWTest {
-    function setUp() public virtual override(BaseComposableCoWTest) {
+contract ComposableCowGuardsTest is BaseComposableCowTest {
+    function setUp() public virtual override(BaseComposableCowTest) {
         // setup Base
         super.setUp();
     }
@@ -38,7 +38,7 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
     }
 
     /**
-     * @dev An end-to-end test of the ComposableCoW contract that tests the following:
+     * @dev An end-to-end test of the ComposableCow contract that tests the following:
      *      1. Validates a single order with no swap guard
      *      2. `owner` can set a swap guard
      *      3. Swap guard does **NOT** allow an invalid order to be validated
@@ -76,10 +76,10 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         _setSwapGuard(address(safe1), evenSwapGuard);
 
         // should not be able to settle as the swap guard doesn't allow it
-        settle(address(safe1), bob, order, signature, ComposableCoW.SwapGuardRestricted.selector);
+        settle(address(safe1), bob, order, signature, ComposableCow.SwapGuardRestricted.selector);
 
         // should not be able to return the order as the swap guard doesn't allow it
-        vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);
+        vm.expectRevert(ComposableCow.SwapGuardRestricted.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // should set the swap guard to the odd swap guard
@@ -131,13 +131,13 @@ contract ComposableCoWGuardsTest is BaseComposableCoWTest {
         _setSwapGuard(address(safe1), lock);
 
         // should revert as the receiver is not the safe
-        vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);
+        vm.expectRevert(ComposableCow.SwapGuardRestricted.selector);
         composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(orderOtherReceiver), new bytes32[](0)
         );
 
         // should revert as the receiver is not the safe
-        vm.expectRevert(ComposableCoW.SwapGuardRestricted.selector);
+        vm.expectRevert(ComposableCow.SwapGuardRestricted.selector);
         ERC1271(address(safe1)).isValidSignature(GPv2Order.hash(order, domainSeparator), signature);
     }
 }

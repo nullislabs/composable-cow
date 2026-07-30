@@ -16,11 +16,11 @@ import {ExtensibleFallbackHandler} from "safe/handler/ExtensibleFallbackHandler.
 import {SafeLib} from "../test/libraries/SafeLib.t.sol";
 
 // Composable CoW
-import {IConditionalOrder, ComposableCoW} from "../src/ComposableCoW.sol";
+import {IConditionalOrder, ComposableCow} from "../src/ComposableCow.sol";
 import {TWAP, TWAPOrder} from "../src/types/twap/TWAP.sol";
 
 /**
- * @title Submit a single order to ComposableCoW
+ * @title Submit a single order to ComposableCow
  * @author mfw78 <mfw78@nxm.rs>
  */
 contract SubmitSingleOrder is Script {
@@ -31,7 +31,7 @@ contract SubmitSingleOrder is Script {
 
         Safe safe = Safe(payable(vm.envAddress("SAFE")));
         TWAP twap = TWAP(vm.envAddress("TWAP"));
-        ComposableCoW composableCow = ComposableCoW(vm.envAddress("COMPOSABLE_COW"));
+        ComposableCow composableCow = ComposableCow(vm.envAddress("COMPOSABLE_COW"));
 
         TWAPOrder.Data memory twapOrder = TWAPOrder.Data({
             sellToken: IERC20(address(1)),
@@ -48,7 +48,7 @@ contract SubmitSingleOrder is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // call to ComposableCoW to submit a single order
+        // call to ComposableCow to submit a single order
         safe.executeSingleOwner(
             address(composableCow),
             0,

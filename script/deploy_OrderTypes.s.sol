@@ -3,7 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {Script} from "forge-std/Script.sol";
 
-import {ComposableCoW} from "../src/ComposableCoW.sol";
+import {ComposableCow} from "../src/ComposableCow.sol";
 
 import {TWAP} from "../src/types/twap/TWAP.sol";
 import {GoodAfterTime} from "../src/types/GoodAfterTime.sol";
@@ -16,7 +16,7 @@ contract DeployOrderTypes is Script {
         address composableCow = vm.envAddress("COMPOSABLE_COW");
         vm.startBroadcast(deployerPrivateKey);
 
-        new TWAP(ComposableCoW(composableCow));
+        new TWAP(ComposableCow(composableCow));
         new GoodAfterTime();
         new PerpetualStableSwap();
         new TradeAboveThreshold();

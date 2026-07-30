@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {ComposableCoW} from "../../ComposableCoW.sol";
+import {ComposableCow} from "../../ComposableCow.sol";
 
 import {
     IConditionalOrder,
@@ -27,9 +27,9 @@ string constant NOT_WITHIN_SPAN = "not within span";
  * @dev Designed to be used with the CoW Protocol Conditional Order Framework.
  */
 contract TWAP is BaseConditionalOrder {
-    ComposableCoW public immutable composableCow;
+    ComposableCow public immutable composableCow;
 
-    constructor(ComposableCoW _composableCow) {
+    constructor(ComposableCow _composableCow) {
         composableCow = _composableCow;
     }
 

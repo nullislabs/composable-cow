@@ -6,18 +6,18 @@ import {ERC1271} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
 import {
     IConditionalOrder,
     GPv2Order,
-    ComposableCoW,
-    ComposableCoWLib,
+    ComposableCow,
+    ComposableCowLib,
     INVALID_HASH,
-    BaseComposableCoWTest,
+    BaseComposableCowTest,
     Safe,
     TestNonSafeWallet
-} from "./ComposableCoW.base.t.sol";
+} from "./ComposableCow.base.t.sol";
 
-contract ComposableCoWTest is BaseComposableCoWTest {
-    using ComposableCoWLib for IConditionalOrder.ConditionalOrderParams[];
+contract ComposableCowTest is BaseComposableCowTest {
+    using ComposableCowLib for IConditionalOrder.ConditionalOrderParams[];
 
-    function setUp() public virtual override(BaseComposableCoWTest) {
+    function setUp() public virtual override(BaseComposableCowTest) {
         // setup Base
         super.setUp();
     }
@@ -26,17 +26,17 @@ contract ComposableCoWTest is BaseComposableCoWTest {
      * @dev Can set the Merkle root for `owner`
      */
     function test_setRoot_FuzzSetAndEmit(address owner, bytes32 root) public {
-        _setRoot(owner, root, ComposableCoW.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
     }
 
     function test_setRootWithContext_FuzzSetAndEmit(address owner, bytes32 root, bytes32 data) public {
         _setRootWithContext(
-            owner, root, ComposableCoW.Proof({location: 0, data: ""}), testContextValue, abi.encode(data)
+            owner, root, ComposableCow.Proof({location: 0, data: ""}), testContextValue, abi.encode(data)
         );
     }
 
     /**
-     * @dev An end-to-end test of the ComposableCoW contract that tests the following:
+     * @dev An end-to-end test of the ComposableCow contract that tests the following:
      *      1. Does **NOT** validate a proof that is not authorized
      *      2. `owner` can set their merkle root
      *      3. **DOES** validate a proof that is authorized
@@ -49,11 +49,11 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             _leaves.getRootAndProof(0, leaves, getRoot, getProof);
 
         // should fail to validate the proof as root is still set bytes32(0)
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // should set the root correctly
-        ComposableCoW.Proof memory proofStruct = ComposableCoW.Proof({location: 0, data: ""});
+        ComposableCow.Proof memory proofStruct = ComposableCow.Proof({location: 0, data: ""});
         _setRoot(address(safe1), root, proofStruct);
 
         // should pass with the root correctly set
@@ -73,12 +73,12 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _setRoot(address(safe1), bytes32(0), proofStruct);
 
         // should fail as the root is set to bytes32(0)
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
     }
 
     /**
-     * @dev An end-to-end test of the ComposableCoW contract that tests the following:
+     * @dev An end-to-end test of the ComposableCow contract that tests the following:
      *      1. Does **NOT** validate a proof that is not authorized
      *      2. `owner` can set their merkle root
      *      3. **DOES** validate a proof that is authorized
@@ -91,11 +91,11 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             _leaves.getRootAndProof(0, leaves, getRoot, getProof);
 
         // should fail to validate the proof as root is still set bytes32(0)
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // should set the root correctly
-        ComposableCoW.Proof memory proofStruct = ComposableCoW.Proof({location: 0, data: ""});
+        ComposableCow.Proof memory proofStruct = ComposableCow.Proof({location: 0, data: ""});
         _setRootWithContext(address(safe1), root, proofStruct, testContextValue, abi.encode(bytes32("testValue")));
 
         // should pass with the root correctly set
@@ -115,7 +115,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _setRoot(address(safe1), bytes32(0), proofStruct);
 
         // should fail as the root is set to bytes32(0)
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
     }
 
@@ -129,7 +129,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             staticInput: ""
         });
 
-        vm.expectRevert(ComposableCoW.InvalidHandler.selector);
+        vm.expectRevert(ComposableCow.InvalidHandler.selector);
 
         // should revert as the handler (address(0)) is invalid
         composableCow.create(params, true);
@@ -195,7 +195,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
     }
 
     /**
-     * @dev An end-to-end test of the ComposableCoW contract that tests the following:
+     * @dev An end-to-end test of the ComposableCow contract that tests the following:
      *     1. Does **NOT** validate a single order that is not authorized
      *     2. `owner` can create a single order
      *     3. Can lookup the validity of the single order for `owner`
@@ -212,7 +212,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         assertEq(composableCow.singleOrders(address(safe1), orderHash), false);
 
         // should fail to return the order as it is not authorized
-        vm.expectRevert(ComposableCoW.SingleOrderNotAuthed.selector);
+        vm.expectRevert(ComposableCow.SingleOrderNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // can create the order
@@ -235,7 +235,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _remove(address(safe1), params);
 
         // should fail to settle the order as it has been removed
-        settle(address(safe1), bob, order, signature, ComposableCoW.SingleOrderNotAuthed.selector);
+        settle(address(safe1), bob, order, signature, ComposableCow.SingleOrderNotAuthed.selector);
     }
 
     /**
@@ -265,7 +265,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             bytes32(0),
             abi.encode(order1),
             abi.encode(
-                ComposableCoW.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: abi.encode(order2)})
+                ComposableCow.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: abi.encode(order2)})
             )
         );
     }
@@ -291,10 +291,10 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         });
 
         // should set the root
-        _setRoot(owner, root, ComposableCoW.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
 
         // should revert as the proof is invalid
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.isValidSafeSignature(
             Safe(payable(owner)),
             address(0), // sender isn't used
@@ -302,7 +302,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             keccak256("some domain separator"),
             bytes32(0), // typeHash isn't used
             abi.encode(getBlankOrder()),
-            abi.encode(ComposableCoW.PayloadStruct({proof: proof, params: params, offchainInput: bytes("")}))
+            abi.encode(ComposableCow.PayloadStruct({proof: proof, params: params, offchainInput: bytes("")}))
         );
     }
 
@@ -324,7 +324,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         });
 
         // should revert as the order has not been created
-        vm.expectRevert(ComposableCoW.SingleOrderNotAuthed.selector);
+        vm.expectRevert(ComposableCow.SingleOrderNotAuthed.selector);
         composableCow.isValidSafeSignature(
             Safe(payable(owner)),
             address(0), // sender isn't used
@@ -332,7 +332,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
             keccak256("some domain separator"),
             bytes32(0), // typeHash isn't used
             abi.encode(getBlankOrder()),
-            abi.encode(ComposableCoW.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: bytes("")}))
+            abi.encode(ComposableCow.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: bytes("")}))
         );
     }
 
@@ -366,7 +366,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
                 bytes32(0), // typeHash isn't used
                 abi.encode(order),
                 abi.encode(
-                    ComposableCoW.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: offchainInput})
+                    ComposableCow.PayloadStruct({proof: new bytes32[](0), params: params, offchainInput: offchainInput})
                 )
             )
         );
@@ -408,7 +408,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _create(alice.addr, params, false);
 
         // should revert as the interface is not supported
-        vm.expectRevert(ComposableCoW.InterfaceNotSupported.selector);
+        vm.expectRevert(ComposableCow.InterfaceNotSupported.selector);
         composableCow.getTradeableOrderWithSignature(alice.addr, params, bytes(""), new bytes32[](0));
     }
 
@@ -433,10 +433,10 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         });
 
         // should set the root
-        _setRoot(owner, root, ComposableCoW.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
 
         // should revert as the proof is invalid
-        vm.expectRevert(ComposableCoW.ProofNotAuthed.selector);
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(owner, params, bytes(""), proof);
     }
 
@@ -456,7 +456,7 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         });
 
         // should revert as the order has not been created
-        vm.expectRevert(ComposableCoW.SingleOrderNotAuthed.selector);
+        vm.expectRevert(ComposableCow.SingleOrderNotAuthed.selector);
         composableCow.getTradeableOrderWithSignature(owner, params, bytes(""), new bytes32[](0));
     }
 

@@ -20,7 +20,7 @@ import {ExtensibleFallbackHandler} from "safe/handler/ExtensibleFallbackHandler.
 import {SafeLib} from "../test/libraries/SafeLib.t.sol";
 
 // Composable CoW
-import {ComposableCoW} from "../src/ComposableCoW.sol";
+import {ComposableCow} from "../src/ComposableCow.sol";
 import {TWAP} from "../src/types/twap/TWAP.sol";
 import {GoodAfterTime} from "../src/types/GoodAfterTime.sol";
 import {PerpetualStableSwap} from "../src/types/PerpetualStableSwap.sol";
@@ -60,7 +60,7 @@ contract DeployAnvilStack is Script {
         SafeProxy proxy = deploySafe(vm.addr(deployerPrivateKey));
 
         // deploy the Composable CoW
-        ComposableCoW composableCow = new ComposableCoW(address(settlement));
+        ComposableCow composableCow = new ComposableCow(address(settlement));
         new TWAP(composableCow);
         new GoodAfterTime();
         new PerpetualStableSwap();

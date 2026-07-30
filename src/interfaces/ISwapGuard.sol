@@ -6,7 +6,7 @@ import {IERC165} from "safe/interfaces/IERC165.sol";
 import {IConditionalOrder, GPv2Order} from "./IConditionalOrder.sol";
 
 /**
- * @title SwapGuard Interface - Restrict CoW Protocol settlement for an account using `ComposableCoW`.
+ * @title SwapGuard Interface - Restrict CoW Protocol settlement for an account using `ComposableCow`.
  * @author mfw78 <mfw78@nxm.rs>
  */
 interface ISwapGuard is IERC165 {

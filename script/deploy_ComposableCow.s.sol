@@ -3,15 +3,15 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import {Script} from "forge-std/Script.sol";
 
-import {ComposableCoW} from "../src/ComposableCoW.sol";
+import {ComposableCow} from "../src/ComposableCow.sol";
 
-contract DeployComposableCoW is Script {
+contract DeployComposableCow is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address settlement = vm.envAddress("SETTLEMENT");
         vm.startBroadcast(deployerPrivateKey);
 
-        new ComposableCoW(settlement);
+        new ComposableCow(settlement);
 
         vm.stopBroadcast();
     }

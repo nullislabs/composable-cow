@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IERC20, GPv2Order, IConditionalOrder, BaseComposableCoWTest} from "./ComposableCoW.base.t.sol";
+import {IERC20, GPv2Order, IConditionalOrder, BaseComposableCowTest} from "./ComposableCow.base.t.sol";
 import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {StopLoss, STRIKE_NOT_REACHED, ORACLE_STALE_PRICE, ORACLE_INVALID_PRICE, ORDER_EXPIRED} from "../src/types/StopLoss.sol";
 
-contract ComposableCoWStopLossTest is BaseComposableCoWTest {
+contract ComposableCowStopLossTest is BaseComposableCowTest {
     IERC20 immutable SELL_TOKEN = IERC20(address(0x1));
     IERC20 immutable BUY_TOKEN = IERC20(address(0x2));
     address constant SELL_ORACLE = address(0x3);
@@ -17,7 +17,7 @@ contract ComposableCoWStopLossTest is BaseComposableCoWTest {
     StopLoss stopLoss;
     address safe;
 
-    function setUp() public virtual override(BaseComposableCoWTest) {
+    function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
         stopLoss = new StopLoss();

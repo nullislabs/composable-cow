@@ -9,12 +9,12 @@ import {
     IConditionalOrder,
     IValueFactory,
     GPv2Order,
-    ComposableCoW,
-    ComposableCoWLib,
+    ComposableCow,
+    ComposableCowLib,
     Safe,
     SafeLib,
-    BaseComposableCoWTest
-} from "./ComposableCoW.base.t.sol";
+    BaseComposableCowTest
+} from "./ComposableCow.base.t.sol";
 
 import {TWAP, NOT_WITHIN_SPAN} from "../src/types/twap/TWAP.sol";
 import {
@@ -40,8 +40,8 @@ uint32 constant FREQUENCY = 1 hours;
 uint32 constant NUM_PARTS = 24;
 uint32 constant SPAN = 5 minutes;
 
-contract ComposableCoWTwapTest is BaseComposableCoWTest {
-    using ComposableCoWLib for IConditionalOrder.ConditionalOrderParams[];
+contract ComposableCowTwapTest is BaseComposableCowTest {
+    using ComposableCowLib for IConditionalOrder.ConditionalOrderParams[];
     using SafeLib for Safe;
 
     TWAPOrder.Data defaultBundle;
@@ -51,7 +51,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
 
     mapping(bytes32 => uint256) public orderFills;
 
-    function setUp() public virtual override(BaseComposableCoWTest) {
+    function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
         // deploy the TWAP handler
@@ -424,10 +424,10 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
     }
 
     /**
-     * @dev Test the entire flow of a TWAP order from `ComposableCoW`'s perspective
+     * @dev Test the entire flow of a TWAP order from `ComposableCow`'s perspective
      */
     function test_settle_e2e() public {
-        // 1. Get the TWAP conditional orders that will be used to dogfood the ComposableCoW
+        // 1. Get the TWAP conditional orders that will be used to dogfood the ComposableCow
         IConditionalOrder.ConditionalOrderParams[] memory _leaves = getBundle(safe1, 50);
 
         // 2. Do the merkle tree dance
@@ -435,7 +435,7 @@ contract ComposableCoWTwapTest is BaseComposableCoWTest {
             _leaves.getRootAndProof(0, leaves, getRoot, getProof);
 
         // 3. Set the root
-        _setRoot(address(safe1), root, ComposableCoW.Proof({location: 0, data: ""}));
+        _setRoot(address(safe1), root, ComposableCow.Proof({location: 0, data: ""}));
 
         // 4. Get the order and signature
         (GPv2Order.Data memory order, bytes memory signature) =

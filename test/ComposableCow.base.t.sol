@@ -9,7 +9,7 @@ import {Safe, IERC165, Enum} from "safe/Safe.sol";
 import {Base} from "./Base.t.sol";
 import {TestAccount, TestAccountLib} from "./libraries/TestAccountLib.t.sol";
 import {SafeLib} from "./libraries/SafeLib.t.sol";
-import {ComposableCoWLib} from "./libraries/ComposableCoWLib.t.sol";
+import {ComposableCowLib} from "./libraries/ComposableCowLib.t.sol";
 
 import {IConditionalOrder, IERC20, BaseConditionalOrder, INVALID_HASH} from "../src/BaseConditionalOrder.sol";
 import {BaseSwapGuard} from "../src/guards/BaseSwapGuard.sol";
@@ -21,17 +21,17 @@ import {ReceiverLock} from "../src/guards/ReceiverLock.sol";
 
 import {IValueFactory} from "../src/interfaces/IValueFactory.sol";
 
-import {ISwapGuard, ComposableCoW, GPv2Order} from "../src/ComposableCoW.sol";
+import {ISwapGuard, ComposableCow, GPv2Order} from "../src/ComposableCow.sol";
 
-contract BaseComposableCoWTest is Base, Merkle {
-    using ComposableCoWLib for IConditionalOrder.ConditionalOrderParams;
+contract BaseComposableCowTest is Base, Merkle {
+    using ComposableCowLib for IConditionalOrder.ConditionalOrderParams;
     using SafeLib for Safe;
 
-    event MerkleRootSet(address indexed owner, bytes32 root, ComposableCoW.Proof proof);
+    event MerkleRootSet(address indexed owner, bytes32 root, ComposableCow.Proof proof);
     event ConditionalOrderCreated(address indexed owner, IConditionalOrder.ConditionalOrderParams params);
     event SwapGuardSet(address indexed owner, ISwapGuard swapGuard);
 
-    ComposableCoW composableCow;
+    ComposableCow composableCow;
 
     TestConditionalOrderGenerator passThrough;
     TestContextSpecifyValue testContextValue;
@@ -45,9 +45,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         super.setUp();
 
         // deploy composable cow
-        composableCow = new ComposableCoW(address(settlement));
+        composableCow = new ComposableCow(address(settlement));
 
-        // set safe1 to have the ComposableCoW `ISafeSignatureVerifier` custom verifier
+        // set safe1 to have the ComposableCow `ISafeSignatureVerifier` custom verifier
         // we will set the domainSeparator to settlement.domainSeparator()
         safe1.execute(
             address(safe1),
@@ -70,16 +70,16 @@ contract BaseComposableCoWTest is Base, Merkle {
     }
 
     /**
-     * @dev Ensure `ComposableCoW` contract is the `ISafeSignatureVerifier` for `safe1` on the `settlement` domain
+     * @dev Ensure `ComposableCow` contract is the `ISafeSignatureVerifier` for `safe1` on the `settlement` domain
      */
-    function test_SetUpState_ComposableCoWDomainVerifier_is_set() public {
+    function test_SetUpState_ComposableCowDomainVerifier_is_set() public {
         assertEq(address(eHandler.domainVerifiers(safe1, settlement.domainSeparator())), address(composableCow));
     }
 
     /**
-     * @dev Ensure `ComposableCoW` and `Settlement` have the same domain separator
+     * @dev Ensure `ComposableCow` and `Settlement` have the same domain separator
      */
-    function test_SetUpState_ComposableCoWDomainSeparator_is_set() public {
+    function test_SetUpState_ComposableCowDomainSeparator_is_set() public {
         assertEq(composableCow.domainSeparator(), settlement.domainSeparator());
     }
 
@@ -88,7 +88,7 @@ contract BaseComposableCoWTest is Base, Merkle {
     /**
      * @dev Sets the root and checks events / state
      */
-    function _setRoot(address owner, bytes32 root, ComposableCoW.Proof memory proof) internal {
+    function _setRoot(address owner, bytes32 root, ComposableCow.Proof memory proof) internal {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
         emit MerkleRootSet(owner, root, proof);
@@ -102,7 +102,7 @@ contract BaseComposableCoWTest is Base, Merkle {
     function _setRootWithContext(
         address owner,
         bytes32 root,
-        ComposableCoW.Proof memory proof,
+        ComposableCow.Proof memory proof,
         IValueFactory valueFactory,
         bytes memory data
     ) internal {
@@ -228,7 +228,7 @@ contract BaseComposableCoWTest is Base, Merkle {
             appData: keccak256("test.twap")
         });
 
-        // 2. Create n conditional orders as leaves of the ComposableCoW
+        // 2. Create n conditional orders as leaves of the ComposableCow
         _leaves = new IConditionalOrder.ConditionalOrderParams[](n);
         for (uint256 i = 0; i < _leaves.length; i++) {
             _leaves[i] = IConditionalOrder.ConditionalOrderParams({
@@ -291,10 +291,10 @@ contract TestConditionalOrderGenerator is BaseConditionalOrder {
 }
 
 /**
- * @dev Stub ERC1271Forwarder that forwards to a ComposableCoW
+ * @dev Stub ERC1271Forwarder that forwards to a ComposableCow
  */
 contract TestNonSafeWallet is ERC1271Forwarder {
-    constructor(address composableCow) ERC1271Forwarder(ComposableCoW(composableCow)) {}
+    constructor(address composableCow) ERC1271Forwarder(ComposableCow(composableCow)) {}
 }
 
 /**

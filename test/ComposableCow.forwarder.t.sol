@@ -4,13 +4,13 @@ pragma solidity >=0.8.0 <0.9.0;
 import {
     GPv2Order,
     IConditionalOrder,
-    BaseComposableCoWTest,
+    BaseComposableCowTest,
     TestNonSafeWallet,
     ERC1271Forwarder
-} from "./ComposableCoW.base.t.sol";
+} from "./ComposableCow.base.t.sol";
 
-contract ComposableCoWForwarderTest is BaseComposableCoWTest {
-    function setUp() public virtual override(BaseComposableCoWTest) {
+contract ComposableCowForwarderTest is BaseComposableCowTest {
+    function setUp() public virtual override(BaseComposableCowTest) {
         // setup Base
         super.setUp();
     }
