@@ -9,10 +9,10 @@ import {
     IConditionalOrder,
     Safe,
     SafeLib,
-    BaseComposableCoWTest,
-    ComposableCoW,
-    ComposableCoWLib
-} from "./ComposableCoW.base.t.sol";
+    BaseComposableCowTest,
+    ComposableCow,
+    ComposableCowLib
+} from "./ComposableCow.base.t.sol";
 
 import {
     IExpectedOutCalculator,
@@ -22,15 +22,15 @@ import {
     PRICE_CHECKER_FAILED
 } from "../src/types/GoodAfterTime.sol";
 
-contract ComposableCoWGatTest is BaseComposableCoWTest {
-    using ComposableCoWLib for IConditionalOrder.ConditionalOrderParams[];
+contract ComposableCowGatTest is BaseComposableCowTest {
+    using ComposableCowLib for IConditionalOrder.ConditionalOrderParams[];
     using SafeLib for Safe;
 
     GoodAfterTime gat;
 
     TestExpectedOutCalculator testOutCalculator;
 
-    function setUp() public virtual override(BaseComposableCoWTest) {
+    function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
         // deploy the GAT handler
@@ -319,7 +319,7 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
     }
 
     /**
-     * @dev Test the entire flow of a GAT order from `ComposableCoW`'s perspective
+     * @dev Test the entire flow of a GAT order from `ComposableCow`'s perspective
      */
     function test_settle_e2e() public {
         // Create the price checker payload

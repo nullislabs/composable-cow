@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Merkle} from "murky/Merkle.sol";
 import {IConditionalOrder} from "../../src/interfaces/IConditionalOrder.sol";
 
-library ComposableCoWLib {
+library ComposableCowLib {
     function hash(IConditionalOrder.ConditionalOrderParams memory params) internal pure returns (bytes32) {
         return keccak256(bytes.concat(keccak256(abi.encode(params))));
     }

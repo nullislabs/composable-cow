@@ -61,7 +61,7 @@ forge_verify() {
 
 for path in \
   "lib/safe/contracts/handler/ExtensibleFallbackHandler.sol" \
-  "src/ComposableCoW.sol" \
+  "src/ComposableCow.sol" \
   "src/types/twap/TWAP.sol" \
   "src/types/GoodAfterTime.sol" \
   "src/types/PerpetualStableSwap.sol" \

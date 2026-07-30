@@ -5,7 +5,7 @@ import {IValueFactory} from "../interfaces/IValueFactory.sol";
 
 /**
  * @title CurrentBlockTimestampFactory - An on-chain value factory that returns the current block timestamp
- * @dev Designed to be used with Safe + ExtensibleFallbackHandler + ComposableCoW
+ * @dev Designed to be used with Safe + ExtensibleFallbackHandler + ComposableCow
  * @author mfw78 <mfw78@nxm.rs>
  */
 contract CurrentBlockTimestampFactory is IValueFactory {
