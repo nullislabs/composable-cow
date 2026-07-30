@@ -9,6 +9,12 @@ repo_root_dir="$(git rev-parse --show-toplevel)"
 networks_json="$repo_root_dir/networks.json"
 standard_json_input_dir="$repo_root_dir/broadcast/StandardJsonInput"
 
+if [ ! -f "$networks_json" ]; then
+  echo "No deployments manifest at $networks_json."
+  echo "This fork has not been deployed, so there is nothing to verify."
+  exit 1
+fi
+
 if ! [[ "$chain_id" =~ [0-9]+ ]]; then
   echo "Usage:"
   echo "  \$ export ETHERSCAN_API_KEY='<your Etherscan key here>'"
