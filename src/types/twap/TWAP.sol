@@ -14,6 +14,7 @@ import {
 import {IOrderManifest} from "../../interfaces/IOrderManifest.sol";
 import {TWAPOrder} from "./libraries/TWAPOrder.sol";
 import {TWAPOrderMathLib, AfterTwapFinish} from "./libraries/TWAPOrderMathLib.sol";
+import {OrderDescriptor} from "../../OrderDescriptor.sol";
 
 // --- error strings
 
@@ -34,12 +35,14 @@ error OrderNotInitialized();
  * specific price, even if the price of the token changes during the trade.
  * @dev Designed to be used with the CoW Protocol Conditional Order Framework.
  */
-contract TWAP is BaseConditionalOrder {
+contract TWAP is OrderDescriptor {
     using SafeCast for uint256;
 
     ComposableCow public immutable composableCow;
 
-    constructor(ComposableCow _composableCow) {
+    constructor(ComposableCow _composableCow, string[] memory descriptorUris, bytes32 descriptorDigest_)
+        OrderDescriptor(descriptorUris, descriptorDigest_)
+    {
         composableCow = _composableCow;
     }
 

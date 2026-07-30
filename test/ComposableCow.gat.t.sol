@@ -36,7 +36,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         super.setUp();
 
         // deploy the GAT handler
-        gat = new GoodAfterTime();
+        gat = new GoodAfterTime(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
 
         // deploy the test expected out calculator
         testOutCalculator = new TestExpectedOutCalculator();

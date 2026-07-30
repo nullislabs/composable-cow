@@ -41,7 +41,7 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        perpetualSwap = new PerpetualStableSwap();
+        perpetualSwap = new PerpetualStableSwap(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
         currentBlockTimestampFactory = new CurrentBlockTimestampFactory();
     }
 
