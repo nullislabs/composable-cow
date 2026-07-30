@@ -33,8 +33,11 @@ contract BaseComposableCowTest is Base, Merkle {
     using ComposableCowLib for IConditionalOrder.ConditionalOrderParams;
     using SafeLib for Safe;
 
-    event MerkleRootSet(address indexed owner, bytes32 root, ComposableCow.Proof proof);
-    event ConditionalOrderCreated(address indexed owner, IConditionalOrder.ConditionalOrderParams params);
+    event MerkleRootSet(address indexed owner, bytes32 root, ComposableCow.Proof proof, bytes context);
+    event ConditionalOrderRemoved(address indexed owner, bytes32 indexed orderHash);
+    event ConditionalOrderCreated(
+        address indexed owner, IConditionalOrder.ConditionalOrderParams params, bytes context
+    );
     event SwapGuardSet(address indexed owner, ISwapGuard swapGuard);
 
     ComposableCow composableCow;
@@ -97,7 +100,7 @@ contract BaseComposableCowTest is Base, Merkle {
     function _setRoot(address owner, bytes32 root, ComposableCow.Proof memory proof) internal {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit MerkleRootSet(owner, root, proof);
+        emit MerkleRootSet(owner, root, proof, bytes(""));
         composableCow.setRoot(root, proof);
         assertEq(composableCow.roots(owner), root);
     }
@@ -112,9 +115,10 @@ contract BaseComposableCowTest is Base, Merkle {
         IValueFactory valueFactory,
         bytes memory data
     ) internal {
+        bytes32 expectedValue = valueFactory.getValue(data);
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit MerkleRootSet(owner, root, proof);
+        emit MerkleRootSet(owner, root, proof, abi.encode(expectedValue));
         composableCow.setRootWithContext(root, proof, valueFactory, data);
         assertEq(composableCow.roots(owner), root);
         assertEq(composableCow.cabinet(owner, bytes32(0)), abi.decode(data, (bytes32)));
@@ -138,7 +142,7 @@ contract BaseComposableCowTest is Base, Merkle {
         vm.prank(owner);
         if (dispatch) {
             vm.expectEmit(true, true, true, true);
-            emit ConditionalOrderCreated(owner, params);
+            emit ConditionalOrderCreated(owner, params, bytes(""));
         }
         composableCow.create(params, dispatch);
         assertEq(composableCow.singleOrders(owner, keccak256(abi.encode(params))), true);
@@ -154,10 +158,11 @@ contract BaseComposableCowTest is Base, Merkle {
         bytes memory data,
         bool dispatch
     ) internal {
+        bytes32 expectedValue = valueFactory.getValue(data);
         vm.prank(owner);
         if (dispatch) {
             vm.expectEmit(true, true, true, true);
-            emit ConditionalOrderCreated(owner, params);
+            emit ConditionalOrderCreated(owner, params, abi.encode(expectedValue));
         }
 
         composableCow.createWithContext(params, valueFactory, data, dispatch);
