@@ -56,7 +56,7 @@ contract GoodAfterTime is BaseConditionalOrder {
         uint256 allowedSlippage; // in basis points
     }
 
-    function getTradeableOrder(
+    function generateOrder(
         address owner,
         address,
         bytes32,
@@ -68,7 +68,7 @@ contract GoodAfterTime is BaseConditionalOrder {
 
         // Don't allow the order to be placed before it becomes valid.
         if (!(block.timestamp >= data.startTime)) {
-            revert IConditionalOrder.PollTryAtEpoch(data.startTime, TOO_EARLY);
+            revert IConditionalOrder.PollTryAtTimestamp(data.startTime, TOO_EARLY);
         }
 
         // Require that the sell token balance is above the minimum.
