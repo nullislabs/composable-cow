@@ -12,9 +12,9 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
 
 // --- error strings
 /**
- * @dev The sell amount is insufficient (ie. not funded).
+ * @dev Neither token balance is non-zero
  */
-string constant NOT_FUNDED = "not funded";
+error NotFunded();
 
 /**
  * @title A smart contract that is always willing to trade between tokenA and tokenB 1:1,
@@ -62,7 +62,7 @@ contract PerpetualStableSwap is BaseConditionalOrder {
 
         // Make sure the order is funded, otherwise it is not valid
         if (!(buySellData.sellAmount > 0)) {
-            revert IConditionalOrder.OrderNotValid(NOT_FUNDED);
+            revert IConditionalOrder.OrderNotValid(NotFunded.selector);
         }
 
         // Unless spread is 0 (and there is no surplus), order collision is not an issue as sell and buy amounts should
@@ -100,14 +100,16 @@ contract PerpetualStableSwap is BaseConditionalOrder {
                 sellToken: tokenA,
                 buyToken: tokenB,
                 sellAmount: balanceA,
-                buyAmount: convertAmount(tokenA, balanceA, tokenB) * (Utils.MAX_BPS + data.halfSpreadBps) / Utils.MAX_BPS
+                buyAmount: convertAmount(tokenA, balanceA, tokenB) * (Utils.MAX_BPS + data.halfSpreadBps)
+                    / Utils.MAX_BPS
             });
         } else {
             buySellData = BuySellData({
                 sellToken: tokenB,
                 buyToken: tokenA,
                 sellAmount: balanceB,
-                buyAmount: convertAmount(tokenB, balanceB, tokenA) * (Utils.MAX_BPS + data.halfSpreadBps) / Utils.MAX_BPS
+                buyAmount: convertAmount(tokenB, balanceB, tokenA) * (Utils.MAX_BPS + data.halfSpreadBps)
+                    / Utils.MAX_BPS
             });
         }
     }

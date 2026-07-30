@@ -197,16 +197,17 @@ contract ComposableCow is ISafeSignatureVerifier {
         }
 
         // Proof is valid, guard (if any) is valid, now check the handler
-        _payload.params.handler.verify(
-            address(safe),
-            sender,
-            _hash,
-            _domainSeparator,
-            ctx,
-            _payload.params.staticInput,
-            _payload.offchainInput,
-            order
-        );
+        _payload.params.handler
+            .verify(
+                address(safe),
+                sender,
+                _hash,
+                _domainSeparator,
+                ctx,
+                _payload.params.staticInput,
+                _payload.offchainInput,
+                order
+            );
 
         return ERC1271.isValidSignature.selector;
     }
@@ -232,9 +233,10 @@ contract ComposableCow is ISafeSignatureVerifier {
         bytes32 ctx = _auth(owner, params, proof);
 
         // Make sure the handler supports `IConditionalOrderGenerator`
-        try IConditionalOrderGenerator(address(params.handler)).supportsInterface(
-            type(IConditionalOrderGenerator).interfaceId
-        ) returns (bool supported) {
+        try IConditionalOrderGenerator(address(params.handler))
+            .supportsInterface(type(IConditionalOrderGenerator).interfaceId) returns (
+            bool supported
+        ) {
             if (!supported) {
                 revert InterfaceNotSupported();
             }
@@ -242,9 +244,8 @@ contract ComposableCow is ISafeSignatureVerifier {
             revert InterfaceNotSupported();
         }
 
-        order = IConditionalOrderGenerator(address(params.handler)).generateOrder(
-            owner, msg.sender, ctx, params.staticInput, offchainInput
-        );
+        order = IConditionalOrderGenerator(address(params.handler))
+            .generateOrder(owner, msg.sender, ctx, params.staticInput, offchainInput);
 
         // Check with the swap guard if the order is restricted or not
         if (!(_guardCheck(owner, ctx, params, offchainInput, order))) {

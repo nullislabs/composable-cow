@@ -6,13 +6,13 @@ import {IConditionalOrder} from "../../../interfaces/IConditionalOrder.sol";
 // --- error strings
 
 /**
- * @dev No discrete order is valid before the start of the TWAP conditional order.
+ * @dev No discrete order is valid before the start of the TWAP
  */
-string constant BEFORE_TWAP_START = "before twap start";
+error BeforeTwapStart();
 /**
- * @dev No discrete order is valid after it's last part.
+ * @dev No discrete order is valid after the last part
  */
-string constant AFTER_TWAP_FINISH = "after twap finish";
+error AfterTwapFinish();
 
 /**
  * @title CoWProtocol TWAP Order Math Library
@@ -43,7 +43,7 @@ library TWAPOrderMathLib {
 
         unchecked {
             /// @dev Order is not valid before the start (order commences at `t0`).
-            if (!(startTime <= block.timestamp)) revert IConditionalOrder.OrderNotValid(BEFORE_TWAP_START);
+            if (!(startTime <= block.timestamp)) revert IConditionalOrder.OrderNotValid(BeforeTwapStart.selector);
 
             /**
              *  @dev Order is expired after the last part (`n` parts, running at `t` time length).
@@ -55,7 +55,7 @@ library TWAPOrderMathLib {
              * `type(uint32).max` so the sum of `startTime + (numParts * frequency)` is ≈ 2⁵⁵.
              */
             if (!(block.timestamp < startTime + (numParts * frequency))) {
-                revert IConditionalOrder.OrderNotValid(AFTER_TWAP_FINISH);
+                revert IConditionalOrder.OrderNotValid(AfterTwapFinish.selector);
             }
 
             /**
