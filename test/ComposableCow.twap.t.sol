@@ -489,7 +489,9 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
             _leaves.getRootAndProof(0, leaves, getRoot, getProof);
 
         // 3. Set the root
-        _setRoot(address(safe1), root, ComposableCow.Proof({location: 0, data: ""}));
+        _setRoot(
+            address(safe1), root, ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)})
+        );
 
         // 4. Get the order and signature
         (ComposableCow.PollResult memory orderRes, bytes memory signature) =

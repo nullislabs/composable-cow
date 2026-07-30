@@ -27,12 +27,16 @@ contract ComposableCowTest is BaseComposableCowTest {
      * @dev Can set the Merkle root for `owner`
      */
     function test_setRoot_FuzzSetAndEmit(address owner, bytes32 root) public {
-        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)}));
     }
 
     function test_setRootWithContext_FuzzSetAndEmit(address owner, bytes32 root, bytes32 data) public {
         _setRootWithContext(
-            owner, root, ComposableCow.Proof({location: 0, data: ""}), testContextValue, abi.encode(data)
+            owner,
+            root,
+            ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)}),
+            testContextValue,
+            abi.encode(data)
         );
     }
 
@@ -54,7 +58,8 @@ contract ComposableCowTest is BaseComposableCowTest {
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // should set the root correctly
-        ComposableCow.Proof memory proofStruct = ComposableCow.Proof({location: 0, data: ""});
+        ComposableCow.Proof memory proofStruct =
+            ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)});
         _setRoot(address(safe1), root, proofStruct);
 
         // should pass with the root correctly set
@@ -97,7 +102,8 @@ contract ComposableCowTest is BaseComposableCowTest {
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
 
         // should set the root correctly
-        ComposableCow.Proof memory proofStruct = ComposableCow.Proof({location: 0, data: ""});
+        ComposableCow.Proof memory proofStruct =
+            ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)});
         _setRootWithContext(address(safe1), root, proofStruct, testContextValue, abi.encode(bytes32("testValue")));
 
         // should pass with the root correctly set
@@ -289,7 +295,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         });
 
         // should set the root
-        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)}));
 
         // should revert as the proof is invalid
         vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
@@ -423,7 +429,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         });
 
         // should set the root
-        _setRoot(owner, root, ComposableCow.Proof({location: 0, data: ""}));
+        _setRoot(owner, root, ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)}));
 
         // should revert as the proof is invalid
         vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
