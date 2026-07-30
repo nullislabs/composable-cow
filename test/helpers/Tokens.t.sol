@@ -6,7 +6,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Mock ERC20 token for testing.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 contract MockERC20 is ERC20 {
     /**
@@ -20,7 +20,7 @@ contract MockERC20 is ERC20 {
 
 /**
  * @title Tokens - A helper contract for local integration testing.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 abstract contract Tokens {
     IERC20 public token0;

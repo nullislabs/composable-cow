@@ -20,7 +20,7 @@ string constant NOT_WITHIN_SPAN = "not within span";
 
 /**
  * @title TWAP Conditional Order
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @notice TWAP conditional orders allow for splitting an order into a series of orders that are
  * executed at a fixed interval. This is useful for ensuring that a trade is executed at a
  * specific price, even if the price of the token changes during the trade.

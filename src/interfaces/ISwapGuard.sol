@@ -7,7 +7,7 @@ import {IConditionalOrder, GPv2Order} from "./IConditionalOrder.sol";
 
 /**
  * @title SwapGuard Interface - Restrict CoW Protocol settlement for an account using `ComposableCoW`.
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 interface ISwapGuard is IERC165 {
     /**

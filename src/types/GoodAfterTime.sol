@@ -23,7 +23,7 @@ string constant PRICE_CHECKER_FAILED = "price checker failed";
 
 /**
  * @title Good After Time (GAT) Conditional Order - with Milkman price checkers
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  * @dev Designed to be used with the CoW Protocol Conditional Order Framework.
  *      This order type allows for placing an order that is valid after a certain time
  *      and that has an optional minimum `sellAmount` determined by a price checker. The

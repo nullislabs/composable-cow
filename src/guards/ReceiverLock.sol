@@ -6,7 +6,7 @@ import {IConditionalOrder, GPv2Order} from "../interfaces/IConditionalOrder.sol"
 
 /**
  * @title A Swap Guard that only allows orders with a receiver of 0x0 (ie. self)
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 contract ReceiverLock is BaseSwapGuard {
     /**

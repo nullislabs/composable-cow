@@ -7,7 +7,7 @@ import {IERC165} from "safe/interfaces/IERC165.sol";
 
 /**
  * @title Conditional Order Interface
- * @author CoW Protocol Developers + mfw78 <mfw78@rndlabs.xyz>
+ * @author CoW Protocol Developers + mfw78 <mfw78@nxm.rs>
  */
 interface IConditionalOrder {
     
@@ -67,7 +67,7 @@ interface IConditionalOrder {
 
 /**
  * @title Conditional Order Generator Interface
- * @author mfw78 <mfw78@rndlabs.xyz>
+ * @author mfw78 <mfw78@nxm.rs>
  */
 interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
     /**
