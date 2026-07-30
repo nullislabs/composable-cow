@@ -19,7 +19,12 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
  */
 error TooEarly();
 /**
- * @dev The sell token balance is below minSellBalance
+ * @dev If the sell token balance is below the minimum.
+ * @dev A zero amount can never nullify: the order would be indefinitely replayable
+ */
+error ZeroAmount();
+/**
+ * @dev The sell token balance is below the required minimum or zero
  */
 error BalanceInsufficient();
 /**
@@ -71,15 +76,21 @@ contract GoodAfterTime is BaseConditionalOrder {
         // Decode the payload into the good after time parameters.
         Data memory data = abi.decode(staticInput, (Data));
 
+        /// @dev A fill-or-kill order with a zero sell amount never trips the
+        /// settlement replay guard; reject it at the source.
+        require(data.sellAmount > 0, IConditionalOrder.OrderNotValid(ZeroAmount.selector));
+
         // Don't allow the order to be placed before it becomes valid.
-        if (!(block.timestamp >= data.startTime)) {
-            revert IConditionalOrderGenerator.PollTryAtTimestamp(data.startTime, TooEarly.selector);
-        }
+        require(
+            block.timestamp >= data.startTime,
+            IConditionalOrderGenerator.PollTryAtTimestamp(data.startTime, TooEarly.selector)
+        );
 
         // Require that the sell token balance is above the minimum.
-        if (!(data.sellToken.balanceOf(owner) >= data.minSellBalance)) {
-            revert IConditionalOrder.OrderNotValid(BalanceInsufficient.selector);
-        }
+        require(
+            data.sellToken.balanceOf(owner) >= data.minSellBalance,
+            IConditionalOrder.OrderNotValid(BalanceInsufficient.selector)
+        );
 
         uint256 buyAmount = abi.decode(offchainInput, (uint256));
 
@@ -92,9 +103,10 @@ contract GoodAfterTime is BaseConditionalOrder {
             uint256 _expectedOut = p.checker.getExpectedOut(data.sellAmount, data.sellToken, data.buyToken, p.payload);
 
             // Don't allow the order to be placed if the buyAmount is less than the minimum out.
-            if (!(buyAmount >= (_expectedOut * (Utils.MAX_BPS - p.allowedSlippage)) / Utils.MAX_BPS)) {
-                revert IConditionalOrderGenerator.PollTryNextBlock(PriceCheckerFailed.selector);
-            }
+            require(
+                buyAmount >= (_expectedOut * (Utils.MAX_BPS - p.allowedSlippage)) / Utils.MAX_BPS,
+                IConditionalOrderGenerator.PollTryNextBlock(PriceCheckerFailed.selector)
+            );
         }
 
         order = GPv2Order.Data(
