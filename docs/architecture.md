@@ -9,7 +9,7 @@ ERC-1271 is the standard for smart contract signature verification, allowing con
 The architecture separates two distinct execution paths:
 
 1. **Settlement Path** — on-chain verification during trade execution (gas-sensitive).
-2. **Polling Path** — off-chain queries by watch-towers (gas-irrelevant).
+2. **Polling Path** — off-chain queries by off-chain monitoring service (historically called a watch-tower)s (gas-irrelevant).
 
 This separation ensures settlement remains gas-efficient while providing rich metadata for off-chain infrastructure.
 
@@ -17,7 +17,7 @@ This separation ensures settlement remains gas-efficient while providing rich me
 
 1. **Single source of truth**: `generateOrder()` contains all order generation logic.
 2. **Lean settlement**: No metadata structs; only constant string errors for debugging.
-3. **Rich polling**: Structured results with scheduling hints for watch-towers.
+3. **Rich polling**: Structured results with scheduling hints for monitoring services.
 4. **Verdict and fill state are orthogonal**: handlers produce a *verdict* (`GeneratorResult`); observed fill state is composed by the registry, never by a handler.
 5. **No code duplication**: Polling wraps the same core logic used by settlement.
 6. **Handler purity**: handlers are pure functions of their explicit arguments (`owner`, `sender`, `ctx`, `staticInput`, `offchainInput`) and must not branch on `msg.sender`. Off-chain simulation soundness depends on this.
@@ -142,7 +142,8 @@ signature emitted iff verdict == POST and the order is postable:
 - Note that a recorded fill also implies the discrete order was already accepted by the orderbook and settled, so it stays solvable there until `validTo`. Continued filling of the remainder does not depend on a monitoring service re-posting it. The registry is an on-chain view and cannot observe orderbook state, so it reports validity and leaves the posting decision to the consumer rather than asserting that the order is still listed.
 - Includes scheduling hints (`nextPollTimestamp` and `waitUntil`).
 - Carries machine-readable reason selectors for debugging; names resolve from the handler ABI.
-- If the swap guard restricts the order, the returned verdict is forced to `INVALID` with `reasonCode = SwapGuardRestricted.selector` and no signature is emitted.
+- If the swap guard restricts the order, the registry reports it in the `PollResult.restriction` overlay (`SWAP_GUARD`) and no signature is emitted; the generator verdict is never overwritten - a guarded `POST` stays visible. Restriction is owner-reversible and its lifecycle is observable via `SwapGuardSet` (clear = `address(0)`).
+- **`INVALID` is uniformly terminal.** With restriction expressed as an overlay, the only producer of `INVALID` is the handler's own `OrderNotValid`; consumers never need a reason-selector branch for control flow.
 - `checkOrder()` returns the same composed `PollResult` through the same `_poll` helper (including the ERC-165 handler gate), without building the signature. The swap guard is not consulted by `checkOrder`; it is enforced at signature build time and during settlement.
 
 ## Error Types
@@ -153,12 +154,13 @@ a `bytes4 reasonCode`: the selector of a custom error the handler declares (e.g.
 part of the handler ABI, so any ABI-aware consumer resolves a reasonCode to a name
 without a bespoke table, and revert data stays fixed-size:
 
-| Error | Meaning | Watch-tower Action |
+| Error | Meaning | Monitoring service Action |
 |-------|---------|-------------------|
 | `OrderNotValid(bytes4)` | Permanent failure | Stop polling |
 | `PollTryNextBlock(bytes4)` | Transient, retry soon | Poll next block |
 | `PollTryAtTimestamp(uint256, bytes4)` | Wait for time | Schedule at timestamp |
 | `PollTryAtBlock(uint256, bytes4)` | Wait for block | Schedule at block |
+| `PollNeedsOffchainInput(bytes4)` | Needs constructed `offchainInput` | Acquire input (see `docs/discovery.md` on order modules) or park - do not re-poll empty on a schedule |
 
 ### Revert Decoding Policy
 
@@ -170,6 +172,7 @@ without a bespoke table, and revert data stays fixed-size:
 | `PollTryNextBlock(code)` | `TRY_NEXT_BLOCK` | decoded code |
 | `PollTryAtTimestamp(t, code)` | `WAIT_TIMESTAMP` (`waitUntil = t`) | decoded code |
 | `PollTryAtBlock(b, code)` | `WAIT_BLOCK` (`waitUntil = b`) | decoded code |
+| `PollNeedsOffchainInput(code)` | `NEEDS_INPUT` (acquire input or park - never a timed retry) | decoded code |
 | `Panic(subcode)` | `TRY_NEXT_BLOCK` | `0x4e487b71` (the `Panic` selector) |
 | `Error(string)` (bare `require`) | `TRY_NEXT_BLOCK` | `0x08c379a0` (the `Error` selector) |
 | any other custom error | `TRY_NEXT_BLOCK` | the caught selector |
@@ -225,7 +228,7 @@ struct PollResult {
 
 ### Verdict Semantics
 
-| Verdict | Meaning | Watch-tower Action |
+| Verdict | Meaning | Monitoring service Action |
 |---------|---------|-------------------|
 | `POST` | Order ready to post | Submit to CoW Protocol API (if the fill overlay allows) |
 | `WAIT_TIMESTAMP` | Wait for specific time | Schedule poll at `waitUntil` |
@@ -324,7 +327,7 @@ function generateOrder(address owner, address, bytes32 ctx, bytes calldata stati
 }
 ```
 
-A watch-tower enumerates the currently active entries via the manifest and polls once per leg with the leg index as `offchainInput`. The same pattern covers a simplified AMM (index 0 = buy, 1 = sell) and sequenced strategies (the follow-up entry appears in the manifest once the first leg fills).
+A monitoring service enumerates the currently active entries via the manifest and polls once per leg with the leg index as `offchainInput`. The same pattern covers a simplified AMM (index 0 = buy, 1 = sell) and sequenced strategies (the follow-up entry appears in the manifest once the first leg fills).
 
 ## Order Manifest Interface
 
@@ -528,6 +531,12 @@ This fork introduces significant architectural changes from [cowprotocol/composa
 | Function added | - | `getNextPollTimestamp()` |
 | Function added | - | `describeOrder()` |
 | Function added | - | `tryGenerateOrder()` returning full revert data |
+| Error + verdict added | - | `PollNeedsOffchainInput(bytes4)` → `NEEDS_INPUT` |
+| Struct changed | `Proof { uint256 location; bytes data }` | `Proof { string[] uris; bytes32[] blobVersionedHashes }` (URI mirrors + in-tx blob verification; `MerkleRootSet` topic0 rotates) |
+| Struct changed | `PollResult { generator, fill, filledAmount }` | + `Restriction restriction` overlay (`INVALID` uniformly terminal) |
+| Behavior | `setRoot(0, proof)` unvalidated | zero root requires an empty proof (`ProofDataMalformed`) |
+| Interfaces added | - | `IOrderDescriptor`, `IOrderModule` sidecars (own ERC-165 ids; advertised only when committed) |
+| Constructors changed | order types take no descriptor args | order types take `(string[] descriptorUris, bytes32 descriptorDigest)` |
 
 The ERC-165 interface id of `IConditionalOrderGenerator` therefore changes: handlers deployed against the upstream interface will not satisfy the new id and are rejected by the polling path of a registry compiled against this fork.
 
