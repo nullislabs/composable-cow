@@ -10,9 +10,8 @@ import {IERC165} from "safe/interfaces/IERC165.sol";
  * @author CoW Protocol Developers + mfw78 <mfw78@nxm.rs>
  */
 interface IConditionalOrder {
-    
     /**
-     * @dev This error is returned by the `getTradeableOrder` function if the order condition is not met.
+     * @dev This error is returned by the `generateOrder` function if the order condition is not met.
      *      A parameter of `string` type is included to allow the caller to specify the reason for the failure.
      */
     error OrderNotValid(string);
@@ -22,10 +21,8 @@ interface IConditionalOrder {
     error PollTryNextBlock(string reason);
     // Signal to a watch tower that polling should be attempted again at a specific block number.
     error PollTryAtBlock(uint256 blockNumber, string reason);
-    // Signal to a watch tower that polling should be attempted again at a specific epoch (unix timestamp).
-    error PollTryAtEpoch(uint256 timestamp, string reason);
-    // Signal to a watch tower that the conditional order should not be polled again (delete).
-    error PollNever(string reason);
+    // Signal to a watch tower that polling should be attempted again at a specific timestamp.
+    error PollTryAtTimestamp(uint256 timestamp, string reason);
 
     /**
      * @dev This struct is used to uniquely identify a conditional order for an owner.
@@ -87,7 +84,7 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
      * @param offchainInput dynamic off-chain input for a discrete order cut from this conditional order
      * @return the tradeable order for submission to the CoW Protocol API
      */
-    function getTradeableOrder(
+    function generateOrder(
         address owner,
         address sender,
         bytes32 ctx,
