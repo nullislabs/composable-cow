@@ -69,19 +69,25 @@ contract BaseComposableCoWTest is Base, Merkle {
         twap = new TWAP(composableCow);
     }
 
-    /// @dev Ensure `ComposableCoW` contract is the `ISafeSignatureVerifier` for `safe1` on the `settlement` domain
+    /**
+     * @dev Ensure `ComposableCoW` contract is the `ISafeSignatureVerifier` for `safe1` on the `settlement` domain
+     */
     function test_SetUpState_ComposableCoWDomainVerifier_is_set() public {
         assertEq(address(eHandler.domainVerifiers(safe1, settlement.domainSeparator())), address(composableCow));
     }
 
-    /// @dev Ensure `ComposableCoW` and `Settlement` have the same domain separator
+    /**
+     * @dev Ensure `ComposableCoW` and `Settlement` have the same domain separator
+     */
     function test_SetUpState_ComposableCoWDomainSeparator_is_set() public {
         assertEq(composableCow.domainSeparator(), settlement.domainSeparator());
     }
 
     // --- Helpers ---
 
-    /// @dev Sets the root and checks events / state
+    /**
+     * @dev Sets the root and checks events / state
+     */
     function _setRoot(address owner, bytes32 root, ComposableCoW.Proof memory proof) internal {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
@@ -90,7 +96,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         assertEq(composableCow.roots(owner), root);
     }
 
-    /// @dev Sets the root with context and checks events / state
+    /**
+     * @dev Sets the root with context and checks events / state
+     */
     function _setRootWithContext(
         address owner,
         bytes32 root,
@@ -106,7 +114,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         assertEq(composableCow.cabinet(owner, bytes32(0)), abi.decode(data, (bytes32)));
     }
 
-    /// @dev Sets the swap guard and checks events / state
+    /**
+     * @dev Sets the swap guard and checks events / state
+     */
     function _setSwapGuard(address owner, ISwapGuard guard) internal {
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
@@ -115,7 +125,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         assertEq(address(composableCow.swapGuards(owner)), address(guard));
     }
 
-    /// @dev Creates a single order and checks events / state
+    /**
+     * @dev Creates a single order and checks events / state
+     */
     function _create(address owner, IConditionalOrder.ConditionalOrderParams memory params, bool dispatch) internal {
         vm.prank(owner);
         if (dispatch) {
@@ -126,7 +138,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         assertEq(composableCow.singleOrders(owner, keccak256(abi.encode(params))), true);
     }
 
-    /// @dev Creates a single order with context and checks events / state
+    /**
+     * @dev Creates a single order with context and checks events / state
+     */
     function _createWithContext(
         address owner,
         IConditionalOrder.ConditionalOrderParams memory params,
@@ -144,7 +158,9 @@ contract BaseComposableCoWTest is Base, Merkle {
         assertEq(composableCow.singleOrders(owner, keccak256(abi.encode(params))), true);
     }
 
-    /// @dev Removes a single order and checks state
+    /**
+     * @dev Removes a single order and checks state
+     */
     function _remove(address owner, IConditionalOrder.ConditionalOrderParams memory params) internal {
         bytes32 orderHash = keccak256(abi.encode(params));
         bytes32 ctx = composableCow.cabinet(owner, orderHash);
@@ -239,7 +255,9 @@ contract TestContextSpecifyValue is IValueFactory {
     }
 }
 
-/// @dev A test swap guard that only allows amounts that are divisible by a given divisor
+/**
+ * @dev A test swap guard that only allows amounts that are divisible by a given divisor
+ */
 contract TestSwapGuard is BaseSwapGuard {
     uint256 private divisor;
 
@@ -258,7 +276,9 @@ contract TestSwapGuard is BaseSwapGuard {
     }
 }
 
-/// @dev A conditional order handler used for testing that returns the GPv2Order passed in as `offchainInput`
+/**
+ * @dev A conditional order handler used for testing that returns the GPv2Order passed in as `offchainInput`
+ */
 contract TestConditionalOrderGenerator is BaseConditionalOrder {
     function getTradeableOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
         public
@@ -270,12 +290,16 @@ contract TestConditionalOrderGenerator is BaseConditionalOrder {
     }
 }
 
-/// @dev Stub ERC1271Forwarder that forwards to a ComposableCoW
+/**
+ * @dev Stub ERC1271Forwarder that forwards to a ComposableCoW
+ */
 contract TestNonSafeWallet is ERC1271Forwarder {
     constructor(address composableCow) ERC1271Forwarder(ComposableCoW(composableCow)) {}
 }
 
-/// @dev A conditional order handler used for testing that reverts on verify
+/**
+ * @dev A conditional order handler used for testing that reverts on verify
+ */
 contract MirrorConditionalOrder is IConditionalOrder {
     function verify(
         address,

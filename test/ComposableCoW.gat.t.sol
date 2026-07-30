@@ -379,7 +379,9 @@ contract ComposableCoWGatTest is BaseComposableCoWTest {
     }
 }
 
-/// @dev A test implementation that returns what we tell it to..
+/**
+ * @dev A test implementation that returns what we tell it to..
+ */
 contract TestExpectedOutCalculator is IExpectedOutCalculator {
     function getExpectedOut(uint256, IERC20, IERC20, bytes memory _data) external pure override returns (uint256) {
         return abi.decode(_data, (uint256));

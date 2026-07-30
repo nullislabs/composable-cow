@@ -22,7 +22,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         super.setUp();
     }
 
-    /// @dev Can set the Merkle root for `owner`
+    /**
+     * @dev Can set the Merkle root for `owner`
+     */
     function test_setRoot_FuzzSetAndEmit(address owner, bytes32 root) public {
         _setRoot(owner, root, ComposableCoW.Proof({location: 0, data: ""}));
     }
@@ -117,7 +119,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
     }
 
-    /// @dev Should disallow setting a handler that is address(0)
+    /**
+     * @dev Should disallow setting a handler that is address(0)
+     */
     function test_create_RevertOnInvalidHandler() public {
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
             handler: IConditionalOrder(address(0)),
@@ -131,7 +135,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         composableCow.create(params, true);
     }
 
-    /// @dev should be able to create and remove a single order
+    /**
+     * @dev should be able to create and remove a single order
+     */
     function test_createAndRemove_FuzzSetAndEmit(address owner, address handler, bytes32 salt, bytes memory staticInput)
         public
     {
@@ -155,7 +161,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         _remove(owner, params);
     }
 
-    /// @dev should be able to create and remove a single order
+    /**
+     * @dev should be able to create and remove a single order
+     */
     function test_createWithContextAndRemove_FuzzSetAndEmit(
         address owner,
         address handler,
@@ -230,7 +238,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         settle(address(safe1), bob, order, signature, ComposableCoW.SingleOrderNotAuthed.selector);
     }
 
-    /// @dev `BaseConditionalOrder` enforces that the order hash is valid
+    /**
+     * @dev `BaseConditionalOrder` enforces that the order hash is valid
+     */
     function test_isValidSafeSignature_BaseConditionalOrder_RevertOnInvalidHash() public {
         IConditionalOrder.ConditionalOrderParams memory params = getPassthroughOrder();
 
@@ -260,7 +270,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         );
     }
 
-    /// @dev Reverts on an invalid proof
+    /**
+     * @dev Reverts on an invalid proof
+     */
     function test_isValidSafeSignature_FuzzRevertInvalidProof(
         address owner,
         bytes32[] memory proof,
@@ -294,7 +306,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         );
     }
 
-    /// @dev Reverts on an invalid single order
+    /**
+     * @dev Reverts on an invalid single order
+     */
     function test_isValidSafeSignature_FuzzRevertInvalidSingleOrder(
         address owner,
         address handler,
@@ -322,7 +336,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         );
     }
 
-    /// @dev Make sure `isValidSafeSignature` passes the context to the handler
+    /**
+     * @dev Make sure `isValidSafeSignature` passes the context to the handler
+     */
     function test_isValidSafeSignature_FuzzPassesContextToHandler(address owner, bytes32 domainSeparator) public {
         // Use the mirror handler as we can use it to inspect the calldata
         // passed to the handler.
@@ -377,7 +393,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         );
     }
 
-    /// @dev `getTradeableOrderWithSignature` should revert if the interface is not supported
+    /**
+     * @dev `getTradeableOrderWithSignature` should revert if the interface is not supported
+     */
     function test_getTradeableOrderWithSignature_RevertInterfaceNotSupported() public {
         // use the mirror handler as it does not support the interface
         IConditionalOrder.ConditionalOrderParams memory params = IConditionalOrder.ConditionalOrderParams({
@@ -394,7 +412,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(alice.addr, params, bytes(""), new bytes32[](0));
     }
 
-    /// @dev `getTradeableOrderWithSignature` should revert if given an invalid proof
+    /**
+     * @dev `getTradeableOrderWithSignature` should revert if given an invalid proof
+     */
     function test_getTradeableOrderWithSignature_FuzzRevertInvalidProof(
         address owner,
         bytes32[] memory proof,
@@ -420,7 +440,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(owner, params, bytes(""), proof);
     }
 
-    /// @dev `getTradeableOrderWithSignature` should revert if given an invalid single order
+    /**
+     * @dev `getTradeableOrderWithSignature` should revert if given an invalid single order
+     */
     function test_getTradeableOrderWithSignature_FuzzRevertInvalidSingleOrder(
         address owner,
         address handler,
@@ -438,7 +460,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         composableCow.getTradeableOrderWithSignature(owner, params, bytes(""), new bytes32[](0));
     }
 
-    /// @dev should return a valid payload for a safe
+    /**
+     * @dev should return a valid payload for a safe
+     */
     function test_getTradeableOrderWithSignature_ReturnsValidPayloadForSafe() public {
         // use the pass through handler as it extends `BaseConditionalOrder` which supports the interface
         IConditionalOrder.ConditionalOrderParams memory params = getPassthroughOrder();
@@ -458,7 +482,9 @@ contract ComposableCoWTest is BaseComposableCoWTest {
         );
     }
 
-    /// @dev should return a valid payload for a non-safe (ERC1271Forwarder)
+    /**
+     * @dev should return a valid payload for a non-safe (ERC1271Forwarder)
+     */
     function test_getTradeableOrderWithSignature_ReturnsValidPayloadForNonSafe() public {
         // Create a non-safe wallet, which is an ERC1271Forwarder
         TestNonSafeWallet nonSafe = new TestNonSafeWallet(address(composableCow));

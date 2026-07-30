@@ -5,9 +5,13 @@ import {IConditionalOrder} from "../../../interfaces/IConditionalOrder.sol";
 
 // --- error strings
 
-/// @dev No discrete order is valid before the start of the TWAP conditional order.
+/**
+ * @dev No discrete order is valid before the start of the TWAP conditional order.
+ */
 string constant BEFORE_TWAP_START = "before twap start";
-/// @dev No discrete order is valid after it's last part.
+/**
+ * @dev No discrete order is valid after it's last part.
+ */
 string constant AFTER_TWAP_FINISH = "after twap finish";
 
 /**

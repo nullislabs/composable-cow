@@ -7,13 +7,21 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
 
 // --- error strings
 
-/// @dev Invalid price data returned by the oracle
+/**
+ * @dev Invalid price data returned by the oracle
+ */
 string constant ORACLE_INVALID_PRICE = "oracle invalid price";
-/// @dev The oracle has returned stale data
+/**
+ * @dev The oracle has returned stale data
+ */
 string constant ORACLE_STALE_PRICE = "oracle stale price";
-/// @dev The strike price has not been reached
+/**
+ * @dev The strike price has not been reached
+ */
 string constant STRIKE_NOT_REACHED = "strike not reached";
-/// @dev The order is not valid anymore
+/**
+ * @dev The order is not valid anymore
+ */
 string constant ORDER_EXPIRED = "order expired";
 
 /**
@@ -23,7 +31,9 @@ string constant ORDER_EXPIRED = "order expired";
  * @dev This order type has replay protection due to the `validTo` parameter, ensuring it will just execute one time
  */
 contract StopLoss is BaseConditionalOrder {
-    /// @dev Scaling factor for the strike price
+    /**
+     * @dev Scaling factor for the strike price
+     */
     int256 constant SCALING_FACTOR = 10 ** 18;
 
     /**

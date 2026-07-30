@@ -11,7 +11,9 @@ import {
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 
 // --- error strings
-/// @dev The sell amount is insufficient (ie. not funded).
+/**
+ * @dev The sell amount is insufficient (ie. not funded).
+ */
 string constant NOT_FUNDED = "not funded";
 
 /**

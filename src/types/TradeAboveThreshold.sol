@@ -12,7 +12,9 @@ import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.so
 
 // --- error strings
 
-/// @dev The sell token balance is below the threshold (ie. threshold not met).
+/**
+ * @dev The sell token balance is below the threshold (ie. threshold not met).
+ */
 string constant BALANCE_INSUFFICIENT = "balance insufficient";
 
 /**
