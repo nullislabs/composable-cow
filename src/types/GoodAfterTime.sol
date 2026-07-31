@@ -12,6 +12,8 @@ import {
     BaseConditionalOrder
 } from "../BaseConditionalOrder.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
+import {OrderDescriptor} from "../OrderDescriptor.sol";
+import {PackageKind} from "../interfaces/PackageKind.sol";
 
 // --- error strings
 /**
@@ -43,7 +45,11 @@ error PriceCheckerFailed();
  *      ensure that the order is not filled multiple times, a `minSellBalance` is
  *      checked before the order is placed.
  */
-contract GoodAfterTime is BaseConditionalOrder {
+contract GoodAfterTime is OrderDescriptor {
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, PackageKind descriptorKind)
+        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
+    {}
+
     using SafeCast for uint256;
 
     // --- types

@@ -9,6 +9,7 @@ import {TWAP} from "../src/types/twap/TWAP.sol";
 import {GoodAfterTime} from "../src/types/GoodAfterTime.sol";
 import {PerpetualStableSwap} from "../src/types/PerpetualStableSwap.sol";
 import {TradeAboveThreshold} from "../src/types/TradeAboveThreshold.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 contract DeployOrderTypes is Script {
     function run() external {
@@ -16,9 +17,9 @@ contract DeployOrderTypes is Script {
         address composableCow = vm.envAddress("COMPOSABLE_COW");
         vm.startBroadcast(deployerPrivateKey);
 
-        new TWAP(ComposableCow(composableCow));
-        new GoodAfterTime();
-        new PerpetualStableSwap();
+        new TWAP(ComposableCow(composableCow), new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new GoodAfterTime(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new PerpetualStableSwap(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
         new TradeAboveThreshold();
 
         vm.stopBroadcast();

@@ -23,6 +23,7 @@ import {
     BalanceInsufficient,
     PriceCheckerFailed
 } from "../src/types/GoodAfterTime.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 contract ComposableCowGatTest is BaseComposableCowTest {
     using ComposableCowLib for IConditionalOrder.ConditionalOrderParams[];
@@ -36,7 +37,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         super.setUp();
 
         // deploy the GAT handler
-        gat = new GoodAfterTime();
+        gat = new GoodAfterTime(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
 
         // deploy the test expected out calculator
         testOutCalculator = new TestExpectedOutCalculator();

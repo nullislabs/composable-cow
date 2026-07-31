@@ -10,6 +10,8 @@ import {
 } from "../BaseConditionalOrder.sol";
 import {IOrderManifest} from "../interfaces/IOrderManifest.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
+import {OrderDescriptor} from "../OrderDescriptor.sol";
+import {PackageKind} from "../interfaces/PackageKind.sol";
 
 // --- error strings
 /**
@@ -21,7 +23,11 @@ error NotFunded();
  * @title A smart contract that is always willing to trade between tokenA and tokenB 1:1,
  * taking decimals into account (and adding specifiable spread)
  */
-contract PerpetualStableSwap is BaseConditionalOrder {
+contract PerpetualStableSwap is OrderDescriptor {
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, PackageKind descriptorKind)
+        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
+    {}
+
     /**
      * Creates a new perpetual swap order. All resulting swaps will be made from the target contract.
      * @param tokenA One of the two tokens that can be perpetually swapped against one another

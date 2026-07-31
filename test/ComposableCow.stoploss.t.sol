@@ -17,6 +17,7 @@ import {
     OracleInvalidPrice,
     OrderExpired
 } from "../src/types/StopLoss.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 contract ComposableCowStopLossTest is BaseComposableCowTest {
     IERC20 immutable SELL_TOKEN = IERC20(address(0x1));
@@ -33,7 +34,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        stopLoss = new StopLoss();
+        stopLoss = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
     }
 
     function priceToAddress(int256 price) internal returns (address) {

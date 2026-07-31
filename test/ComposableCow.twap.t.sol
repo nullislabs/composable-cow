@@ -33,6 +33,7 @@ import {
 import {TWAPOrderMathLib, BeforeTwapStart, AfterTwapFinish} from "../src/types/twap/libraries/TWAPOrderMathLib.sol";
 
 import {CurrentBlockTimestampFactory} from "../src/value_factories/CurrentBlockTimestampFactory.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 uint256 constant SELL_AMOUNT = 24000e18;
 uint256 constant LIMIT_PRICE = 100e18;
@@ -55,7 +56,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         super.setUp();
 
         // deploy the TWAP handler
-        twap = new TWAP(composableCow);
+        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
 
         // deploy the current block timestamp factory
         currentBlockTimestampFactory = new CurrentBlockTimestampFactory();
