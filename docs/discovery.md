@@ -33,21 +33,79 @@ described in RFC 2119.
   self-describing. Modules extend service coverage to handlers that require
   constructed `offchainInput`; they never mediate verdicts, which always come
   from the chain.
-- **Executable code is pulled only against an on-chain content hash.** Module
-  bytes MUST verify against `moduleDigest()` before execution, regardless of
-  transport. Digest-verified modules MAY be fetched and executed
-  automatically, but only inside the sandbox and budget regime of §2.
+- **Executable code is pulled only against an on-chain commitment.** Module
+  bytes MUST verify against `moduleCommitment()` before execution. The
+  commitment is a root in a named addressing scheme (§0), so verification uses
+  that scheme's own primitives rather than a separate hash over the fetched
+  bytes. Verified modules MAY be fetched and executed automatically, but only
+  inside the sandbox and budget regime of §2.
 - **Feature detection, never gating.** Every interface here is a sidecar with
   its own ERC-165 id, detected independently, absent without penalty, and never
   on the settlement path.
-- **One URI format everywhere.** Descriptors, modules, and proof payloads all
-  reference off-chain bytes as URIs under a single scheme policy and a single
-  hardened fetcher. What differs per surface is only the integrity source:
-  descriptor and module bytes verify against an on-chain digest; proof payload
-  bytes verify by recomputing the merkle root.
+- **One commitment format everywhere.** Descriptors and modules are committed
+  to identically: a `(digest, kind)` pair under §0, verified by the addressing
+  scheme's own primitives. What differs per surface is only the structure the
+  commitment resolves to: a descriptor resolves to one JSON document, a module
+  to a package. Proof payloads are the exception and verify by recomputing the
+  merkle root, since they are authored per root rather than published once.
+- **Content addressing locates as well as verifies.** For `BZZ` and `IPFS` the
+  commitment already names where the bytes live, so a handler publishes no URI
+  and no gateway is written into a deployed contract. Retrieval is the host's
+  concern. URIs exist for `SHA256`, where the digest locates nothing.
 - **Fail closed.** Unknown URI schemes, unsupported or reverting views, and
   unverifiable documents are treated as "no discovery", never as errors to
   retry aggressively and never as data to trust.
+
+## 0. Commitments
+
+Descriptors (§1) and modules (§2) are both committed to on-chain as a
+`(bytes32 digest, DigestKind kind)` pair. `kind` names the addressing scheme
+the digest is expressed in; verification uses that scheme's own primitives.
+
+```solidity
+enum DigestKind {
+    BZZ,    // digest is a Swarm BMT root
+    IPFS,   // digest is the sha2-256 multihash digest of the root CID
+    SHA256  // digest is sha256 over the published bytes
+}
+```
+
+`kind` is what makes the digest interpretable, and it is the reason no
+canonical byte serialisation is specified anywhere in this document: a
+mantaray manifest and a UnixFS DAG each already define a deterministic
+structure, so there is nothing left to canonicalise. `SHA256` covers the
+non-content-addressed case, where the published bytes are hashed directly.
+
+### 0.1 Location
+
+`BZZ` and `IPFS` are content-addressed: the commitment names the bytes, so it
+also locates them. For these kinds the URI list SHOULD be empty and a host
+resolves the digest through whatever Swarm or IPFS access it has. A handler
+that lists URIs anyway supplies non-normative hints; a host MAY use them and
+MUST still verify against the commitment.
+
+`SHA256` is not self-locating. Its URI list MUST be non-empty, and every URI
+MUST resolve to bytes whose sha256 equals the digest.
+
+A `bytes32(0)` digest is uncommitted. Consumers MUST treat the surface as
+absent rather than fetching anything.
+
+### 0.2 Verification
+
+Verification is a chain from the on-chain commitment to the bytes actually
+used, with no step taken on trust:
+
+| kind | commitment resolves to | entries verify by |
+|---|---|---|
+| `BZZ` | mantaray manifest, or a leaf for a single document | BMT roots carried in the manifest |
+| `IPFS` | UnixFS directory, or a file for a single document | CIDs carried in the DAG |
+| `SHA256` | a zip archive, or the document bytes | the archive digest covers every byte |
+
+No per-entry digest is declared anywhere off-chain. For `BZZ` and `IPFS` the
+manifest already carries the root of each entry, and for `SHA256` verifying
+the archive authenticates all of its contents at once. Restating those
+digests in a manifest file would create a second source of truth and a
+disagreement to specify around, without adding a check.
 
 ## 1. Handler descriptors
 
@@ -60,22 +118,26 @@ interface IOrderDescriptor {
      * @dev MUST be emitted from the constructor of implementing contracts so
      *      indexers discover the descriptor without polling.
      */
-    event DescriptorUpdate(string[] uris, bytes32 digest);
+    event DescriptorUpdate(string[] uris, bytes32 digest, DigestKind kind);
 
     /**
      * @notice Locations of the handler descriptor document.
-     * @dev All URIs MUST reference the same document bytes (redundant
-     *      mirrors), never alternative content.
+     * @dev Empty for content-addressed kinds, which the commitment locates.
+     *      Required for `SHA256`. Any URI listed is a hint: all MUST resolve
+     *      to the same document bytes, never alternative content.
      */
     function descriptorURI() external view returns (string[] memory uris);
 
     /**
-     * @notice keccak256 of the exact descriptor document bytes as published.
-     * @dev Consumers MUST verify fetched bytes against this digest before
-     *      parsing when the URI is not content-addressed. bytes32(0) means
-     *      uncommitted; consumers MUST treat such descriptors as untrusted.
+     * @notice Commitment to the descriptor document.
+     * @dev `digest` is the document root in `kind`'s addressing. Consumers
+     *      MUST verify fetched bytes against it before parsing.
+     *      `bytes32(0)` means uncommitted; treat the descriptor as absent.
      */
-    function descriptorDigest() external view returns (bytes32);
+    function descriptorCommitment()
+        external
+        view
+        returns (bytes32 digest, DigestKind kind);
 }
 ```
 
@@ -94,20 +156,24 @@ interface IOrderDescriptor {
 
 ### 1.2 URI policy
 
-Descriptor URIs MUST be one of:
+Integrity comes from the commitment (§0), never from the URI, so this policy
+governs retrieval only. Where a URI is used it MUST be one of:
 
-| Scheme | Integrity source |
+| Scheme | Used with |
 |---|---|
-| `bzz://` | content address |
-| `ipfs://` | content address |
-| `data:` | in-band |
-| `ni:` (RFC 6920) | hash embedded in the URI; `.well-known/ni/` HTTPS mapping applies |
-| `https:` | permitted ONLY when `descriptorDigest()` is non-zero |
+| `bzz://` | `BZZ`, as a hint; the digest already locates the document |
+| `ipfs://` | `IPFS`, as a hint |
+| `data:` | any kind, for a document published in-band |
+| `https:` | `SHA256`, where it is the only way to locate the document |
 
 `http:`, `file:`, and any URI resolving to loopback, link-local, or private
 address ranges are prohibited. Fetchers SHOULD disable redirects (or re-validate
 every hop against this policy), enforce a size cap (256 KiB RECOMMENDED), and
 enforce a total timeout.
+
+An `https:` URI is never trusted on its own: bytes fetched from one are used
+only after they verify against the commitment, which for `SHA256` is the whole
+of the integrity argument.
 
 ### 1.3 Document
 
@@ -193,33 +259,37 @@ interface IOrderModule {
      * @notice Emitted when the module location or commitment changes.
      * @dev MUST be emitted from the constructor of implementing contracts.
      */
-    event ModuleUpdate(string[] uris, bytes32 digest);
+    event ModuleUpdate(string[] uris, bytes32 digest, DigestKind kind);
 
     /**
-     * @notice Locations of the module. All URIs MUST reference the same bytes.
+     * @notice Locations of the module package.
+     * @dev Empty for content-addressed kinds, which the commitment locates.
+     *      Required for `SHA256`. Any URI listed is a hint.
      */
     function moduleURI() external view returns (string[] memory uris);
 
     /**
-     * @notice keccak256 of the exact module bytes. MUST be non-zero.
-     * @dev The module's canonical identity and the final pre-execution gate.
-     *      Fetch integrity is per-transport (a Swarm reference, CID, or
-     *      RFC 6920 hash verifies the fetch); the digest is what consent
-     *      lists, caches, and budgets key by, so mirror rotation never
-     *      invalidates operator trust in byte-identical code. Consumers MUST
-     *      verify keccak256(bytes) == moduleDigest() before execution and
-     *      MUST NOT serve cached bytes against any other key.
+     * @notice Commitment to the module package. `digest` MUST be non-zero.
+     * @dev The package root in `kind`'s addressing, and the module's
+     *      canonical identity: consent lists, caches, and budgets key by it,
+     *      so changing where a package is mirrored never invalidates operator
+     *      trust in the same code. Consumers MUST verify the package against
+     *      it before execution and MUST NOT serve cached bytes against any
+     *      other key.
      */
-    function moduleDigest() external view returns (bytes32);
+    function moduleCommitment()
+        external
+        view
+        returns (bytes32 digest, DigestKind kind);
 }
 ```
 
 - Sidecar with its own ERC-165 id, detected independently of
   `IOrderDescriptor`: a module without presentation metadata is valid, and
   vice versa.
-- A zero `moduleDigest` is non-conformant; consumers MUST refuse to execute
-  unverifiable bytes. This is the content-hash gate: no module runs whose
-  bytes do not match the on-chain commitment.
+- A zero digest is non-conformant; consumers MUST refuse to execute
+  unverifiable bytes. This is the gate: no module runs whose package does not
+  resolve from the on-chain commitment.
 - Mutability by omission, as for descriptors: no setter in the interface;
   immutable implementations emit `ModuleUpdate` once from the constructor;
   post-constructor updates are a trust signal consumers MAY act on.
@@ -235,16 +305,24 @@ orders, never cause an unauthorized order to validate. The residual risks are
 host compromise and resource burn, addressed by the following requirements,
 which are MUSTs for any automatic execution:
 
-- **Sandbox, no ambient authority**: no filesystem, no environment, no keys,
-  no arbitrary network. I/O is limited to
-  - a read-only EIP-1193 provider (`eth_call`, `eth_getStorageAt`,
-    `eth_blockNumber`), and
-  - fetch scoped to the origins the module declares (§2.3), with SSRF policy
-    applied (public addresses only, no redirects leaving the declared set,
-    size and time caps).
+- **No ambient authority**: a module is a WebAssembly component and reaches
+  the outside world only through what its world imports (§2.3). No filesystem,
+  no environment, no keys, no arbitrary network — not as a host promise, but
+  because those interfaces are absent from the world it is instantiated in.
+  What remains is chain access, an outbound HTTP client the host restricts to
+  the origins the package declares, and logging.
+- **Authenticated capability grant**: the origin allowlist lives inside the
+  package, and the package root is the on-chain commitment (§0). A host
+  therefore cannot be handed a wider grant than the handler author committed
+  to, and an operator can audit the grant from chain state alone.
 - **Budgets**: hard CPU/wall-clock/memory limits per invocation; a module that
   exceeds them is parked per handler under the same bounded-retry policy as
   unavailable payloads, never hot-retried.
+- **Idempotence, not determinism**: a module MAY fetch, so repeated calls with
+  identical input MAY return different bytes. What is required is that
+  `build-offchain-input` has no observable side effects and is safe to call
+  any number of times with results discarded. Determinism is neither achievable
+  nor needed, because output is verified on-chain rather than trusted.
 - **Output distrust**: the host treats returned `offchainInput` as opaque
   candidate bytes for on-chain calls — never as truth about the order.
 
@@ -254,42 +332,143 @@ claims.
 
 ### 2.3 Module contract (v1)
 
-This specification normatively defines only the **portability core** below —
-the minimum every module MUST satisfy regardless of which host loads it. The
-full runtime interface — host API semantics (provider method set, scoped-fetch
-behavior), packaging and loading, concrete resource budgets, optional exports
-(e.g. frontend rendering), and the evolution of the module manifest — is
-delegated to **shepherd**, the reference off-chain monitoring service, whose
-module-interface specification is authoritative and independently versioned.
-Modules SHOULD target the shepherd module interface; other hosts implementing
-the same interface inherit module compatibility.
+A module is a WebAssembly component (WASI Preview 2). This specification
+normatively defines the **portability core**: what a module MUST export,
+below. What a module MAY import — the host surface, capability grants, and
+resource budgets — is the *environment*, defined by `videre:ccow` and
+delegated to the host that implements it. **shepherd** is the reference
+monitoring service; other hosts implementing the same world inherit module
+compatibility.
 
-The portability core: a single-file ES module, dependencies bundled, no
-runtime imports:
+The split is deliberate. The export contract is versioned alongside
+`IOrderModule`, because `moduleCommitment()` and the WIT are two halves of one
+agreement: the chain says a module exists, and the WIT says what a module is.
+The import surface versions with the runtime instead.
 
-```js
-export const version = "1";
-export const capabilities = { origins: ["https://api.example.com"] };
+#### Portability core
 
-export async function buildOffchainInput({ chainId, provider, fetch, owner, params, ctx }) {
-  // provider: read-only EIP-1193 (eth_call, eth_getStorageAt, eth_blockNumber)
-  // fetch: host-supplied, restricted to `capabilities.origins`
-  return "0x…"; // offchainInput bytes
+```wit
+package ccow:module@1.0.0;
+
+interface order-module {
+  /// 20 bytes.
+  type address = list<u8>;
+  /// 32 bytes.
+  type word = list<u8>;
+
+  record params { handler: address, salt: word, static-input: list<u8> }
+
+  /// The order, plus the block the host will evaluate the resulting
+  /// `offchainInput` against.
+  record poll {
+    chain-id: u64,
+    block-number: u64,
+    owner: address,
+    /// Zero word when the order is authorised by merkle root.
+    ctx: word,
+    params: params,
+  }
+
+  record not-ready {
+    reason: string,
+    /// Suggested wait before retrying. Absent leaves cadence to the host.
+    retry-after-ms: option<u64>,
+  }
+
+  variant outcome {
+    /// The `offchainInput` bytes. Empty is valid and common.
+    ready(list<u8>),
+    /// No input at this block; the order stays live.
+    not-ready(not-ready),
+    /// This module can never service this order. The host stops asking.
+    unserviceable(string),
+  }
+
+  build-offchain-input: func(req: poll) -> result<outcome, string>;
 }
 ```
 
-- `capabilities.origins` declares every external origin the module may
-  contact; the host grants fetch to exactly that set and nothing else. An
-  empty list means chain-state-only.
-- `buildOffchainInput` SHOULD be deterministic given a block and the external
-  data it fetches; output is best-effort by construction, since verification
-  is on-chain.
-- Constructed `offchainInput` is used exclusively as input to on-chain calls
-  (`poll` / `getTradeableOrderWithSignature`) — never for display, never for
-  scheduling beyond the returned verdict.
-- Optional exports (e.g. `renderSummary` for frontend rendering) and other
-  module types (e.g. wasm) are defined by the shepherd module-interface
-  specification, not here.
+`outcome` mirrors the on-chain verdict trichotomy — postable, wait, terminal —
+so a handler author meets no new vocabulary. Not being ready is an outcome
+rather than an error, exactly as a `WAIT` verdict is not a revert. The error
+case is a log string: every host-actionable state is already in `outcome`, and
+every structured host failure (rate limiting, a denied origin, a timeout) is
+observed first-hand by the host at the call it mediated, so a module echoing
+one back adds nothing.
+
+#### Environment
+
+```wit
+package videre:ccow@0.1.0;
+
+world order-module {
+  use nexum:host/types@0.2.0.{config, host-error};
+
+  import nexum:host/chain@0.2.0;
+  import nexum:host/http@0.2.0;
+  import nexum:host/logging@0.2.0;
+
+  export init: func(config: config) -> result<_, host-error>;
+  export ccow:module/order-module@1.0.0;
+}
+```
+
+Deliberately absent: `local-store`, `messaging`, `identity`, `remote-store`.
+Persistent state would let two invocations with identical input diverge, which
+is the idempotence requirement of §2.2; leaving the interface out makes that
+structural instead of a rule to enforce.
+
+#### Package
+
+The commitment resolves to a package whose layout is the same across kinds:
+
+```
+nexum.toml
+component.wasm
+```
+
+```toml
+[module]
+name = "twap-oracle"
+version = "1.0.0"
+world = "videre:ccow/order-module@0.1.0"
+component = "component.wasm"
+
+[capabilities]
+required = ["chain", "http", "logging"]
+
+[capabilities.http]
+allow = ["https://api.example.com"]
+
+[config]
+pair = "WETH/USDC"
+```
+
+- `[capabilities.http].allow` is the complete set of origins the module may
+  contact; the host grants exactly that and nothing else. Absent or empty
+  means chain-state only.
+- `world` lets a host reject a component built against the wrong world before
+  linking, rather than failing on a missing import.
+- `[config]` is passed verbatim to `init`. A module that cannot run with the
+  configuration it is given MUST fail there, not per poll.
+- No file digests are declared. §0.2 covers why: the commitment already
+  authenticates every entry.
+
+#### Execution
+
+1. Resolve the commitment (§0.1) and verify the package root (§0.2).
+2. Read `nexum.toml` from the package, verifying its entry.
+3. Instantiate `component.wasm` in the `videre:ccow/order-module` world, with
+   HTTP restricted to `[capabilities.http].allow`.
+4. `init` with `[config]`. A failure here parks the handler; it is a
+   packaging fault, not a transient one.
+5. `build-offchain-input` per poll, dispatching on `outcome`: `ready` supplies
+   `offchainInput` to `getTradeableOrderWithSignature`; `not-ready` parks the
+   order for `retry-after-ms`; `unserviceable` stops polling that handler.
+
+Constructed `offchainInput` is used exclusively as input to on-chain calls
+(`poll` / `getTradeableOrderWithSignature`) — never for display, never for
+scheduling beyond the returned verdict.
 
 ## 3. Proof payload URIs and the merkle payload
 
@@ -432,11 +611,13 @@ alone does not tell a consumer how to select among concurrent orders.
 Monitoring-service policy is a gradient, not a binary:
 
 1. **Curated allowlist** — full service; operators MAY relax sandbox budgets
-   for modules they have audited.
-2. **Discovered, digest-verified** — on-chain commitments check out
-   (`moduleDigest` for modules, `descriptorDigest`/content address for
-   descriptors): poll, post, display, and automatic module execution under
-   the full §2.2 sandbox and budget regime.
+   for modules they have audited. Allowlists key by the commitment digest,
+   which is why it is a single canonical value rather than one per mirror: an
+   audit of a module covers it wherever it is fetched from.
+2. **Discovered, commitment-verified** — `moduleCommitment()` and
+   `descriptorCommitment()` resolve and verify per §0.2: poll, post, display,
+   and automatic module execution under the full §2.2 sandbox and budget
+   regime.
 3. **Bare probe** — ERC-165 advertises the generator interface;
    `tryGenerateOrder(owner, params, "")` is the black-box serviceability
    test. Typed verdicts with real reason selectors: poll at low priority with
