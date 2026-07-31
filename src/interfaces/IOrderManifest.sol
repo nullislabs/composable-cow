@@ -73,7 +73,7 @@ interface IOrderManifest {
      * @param owner The owner of the conditional order
      * @param ctx Context key (bytes32(0) for merkle, hash(params) for single)
      * @param staticInput The static input parameters for the conditional order
-     * @param offchainInput Dynamic parameters from watch-tower (may be empty)
+     * @param offchainInput Dynamic parameters from monitoring service (may be empty)
      * @param offset Starting index for pagination
      * @param limit Maximum number of entries to return
      * @return entries Array of manifest entries

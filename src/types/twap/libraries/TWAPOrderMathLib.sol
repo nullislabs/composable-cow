@@ -43,7 +43,7 @@ library TWAPOrderMathLib {
 
         unchecked {
             /// @dev Order is not yet valid before the start (order commences at `t0`);
-            ///      a watch tower should try again at the start time.
+            ///      a monitoring service should try again at the start time.
             require(
                 startTime <= block.timestamp,
                 IConditionalOrderGenerator.PollTryAtTimestamp(startTime, BeforeTwapStart.selector)
