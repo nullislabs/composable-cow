@@ -5,6 +5,13 @@ import {GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
 import {IERC165} from "safe/interfaces/IERC165.sol";
 
 /**
+ * @dev Canonical reason for `PollNeedsOffchainInput`: the handler cannot
+ *      generate with empty `offchainInput` and has no more specific reason.
+ *      Handlers MAY declare their own reason errors naming the missing input.
+ */
+error OffchainInputRequired();
+
+/**
  * @title Conditional Order Interface
  * @author CoW Protocol Developers + mfw78 <mfw78@nxm.rs>
  */
@@ -81,6 +88,13 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
     error PollTryAtBlock(uint256 blockNumber, bytes4 reasonCode);
     // Signal to a watch tower that polling should be attempted again at a specific timestamp.
     error PollTryAtTimestamp(uint256 timestamp, bytes4 reasonCode);
+    /**
+     * @dev Generation requires non-empty `offchainInput` that the caller did not
+     *      supply. Unlike the timed poll errors, this is not a retry signal:
+     *      consumers MUST NOT re-poll with empty input on a schedule - acquire
+     *      the input (see `docs/discovery.md` on order modules) or park the order.
+     */
+    error PollNeedsOffchainInput(bytes4 reasonCode);
 
     /**
      * Generate the discrete order for the current conditions.
@@ -113,7 +127,8 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
         WAIT_TIMESTAMP, // Wait until `waitUntil` (unix timestamp)
         WAIT_BLOCK, // Wait until `waitUntil` (block number)
         TRY_NEXT_BLOCK, // Transient condition, retry next block
-        INVALID // Permanently invalid, stop polling
+        INVALID, // Permanently invalid, stop polling
+        NEEDS_INPUT // Requires non-empty offchainInput; acquire input or park - never a timed retry
     }
 
     /**
