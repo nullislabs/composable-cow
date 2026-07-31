@@ -2,14 +2,14 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IOrderModule} from "./interfaces/IOrderModule.sol";
-import {DigestKind} from "./interfaces/DigestKind.sol";
+import {PackageKind} from "./interfaces/PackageKind.sol";
 import {BaseConditionalOrder} from "./BaseConditionalOrder.sol";
 
 /**
  * @title Order Module mixin - opt-in module commitment for handlers
  * @author mfw78 <mfw78@nxm.rs>
  * @dev Immutable by omission, as for `OrderDescriptor`. The commitment is what
- *      advertises `IOrderModule`, not the URI list: a content-addressed
+ *      advertises `IOrderModule`, not the URI list: a `BZZ_MANIFEST`
  *      commitment locates its own package and so publishes no URI. Constructed
  *      with a zero digest, the handler does not advertise the interface.
  */
@@ -20,17 +20,17 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
     error UncommittedModuleURI();
 
     /**
-     * @dev `SHA256` does not locate the package, so it requires a URI
+     * @dev `TAR_ZST` does not locate the package, so it requires a URI
      */
     error ModuleURIRequired();
 
     string[] private _moduleUris;
     bytes32 private immutable _MODULE_DIGEST;
-    DigestKind private immutable _MODULE_KIND;
+    PackageKind private immutable _MODULE_KIND;
 
-    constructor(string[] memory uris, bytes32 digest, DigestKind kind) {
+    constructor(string[] memory uris, bytes32 digest, PackageKind kind) {
         if (digest != bytes32(0)) {
-            require(kind != DigestKind.SHA256 || uris.length > 0, ModuleURIRequired());
+            require(kind != PackageKind.TAR_ZST || uris.length > 0, ModuleURIRequired());
             emit ModuleUpdate(uris, digest, kind);
         } else {
             require(uris.length == 0, UncommittedModuleURI());
@@ -50,7 +50,7 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
     /**
      * @inheritdoc IOrderModule
      */
-    function moduleCommitment() external view returns (bytes32 digest, DigestKind kind) {
+    function moduleCommitment() external view returns (bytes32 digest, PackageKind kind) {
         return (_MODULE_DIGEST, _MODULE_KIND);
     }
 

@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IOrderDescriptor} from "./interfaces/IOrderDescriptor.sol";
-import {DigestKind} from "./interfaces/DigestKind.sol";
+import {PackageKind} from "./interfaces/PackageKind.sol";
 import {BaseConditionalOrder} from "./BaseConditionalOrder.sol";
 
 /**
@@ -24,17 +24,17 @@ abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
     error UncommittedDescriptorURI();
 
     /**
-     * @dev `SHA256` does not locate the document, so it requires a URI
+     * @dev `TAR_ZST` does not locate the document, so it requires a URI
      */
     error DescriptorURIRequired();
 
     string[] private _descriptorUris;
     bytes32 private immutable _DESCRIPTOR_DIGEST;
-    DigestKind private immutable _DESCRIPTOR_KIND;
+    PackageKind private immutable _DESCRIPTOR_KIND;
 
-    constructor(string[] memory uris, bytes32 digest, DigestKind kind) {
+    constructor(string[] memory uris, bytes32 digest, PackageKind kind) {
         if (digest != bytes32(0)) {
-            require(kind != DigestKind.SHA256 || uris.length > 0, DescriptorURIRequired());
+            require(kind != PackageKind.TAR_ZST || uris.length > 0, DescriptorURIRequired());
             emit DescriptorUpdate(uris, digest, kind);
         } else {
             require(uris.length == 0, UncommittedDescriptorURI());
@@ -54,7 +54,7 @@ abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
     /**
      * @inheritdoc IOrderDescriptor
      */
-    function descriptorCommitment() external view returns (bytes32 digest, DigestKind kind) {
+    function descriptorCommitment() external view returns (bytes32 digest, PackageKind kind) {
         return (_DESCRIPTOR_DIGEST, _DESCRIPTOR_KIND);
     }
 
@@ -62,7 +62,7 @@ abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
      * @dev Advertise `IOrderDescriptor` only when a descriptor is committed:
      *      claiming the interface while returning empty values is
      *      non-conformant per the discovery specification. The commitment is
-     *      the gate, not the URI list, since a content-addressed commitment
+     *      the gate, not the URI list, since a `BZZ_MANIFEST` commitment
      *      locates its own document and publishes no URI.
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {

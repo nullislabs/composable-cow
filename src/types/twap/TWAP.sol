@@ -15,7 +15,7 @@ import {IOrderManifest} from "../../interfaces/IOrderManifest.sol";
 import {TWAPOrder} from "./libraries/TWAPOrder.sol";
 import {TWAPOrderMathLib, AfterTwapFinish} from "./libraries/TWAPOrderMathLib.sol";
 import {OrderDescriptor} from "../../OrderDescriptor.sol";
-import {DigestKind} from "../../interfaces/DigestKind.sol";
+import {PackageKind} from "../../interfaces/PackageKind.sol";
 
 // --- error strings
 
@@ -45,7 +45,7 @@ contract TWAP is OrderDescriptor {
         ComposableCow _composableCow,
         string[] memory descriptorUris,
         bytes32 descriptorDigest_,
-        DigestKind descriptorKind
+        PackageKind descriptorKind
     ) OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind) {
         composableCow = _composableCow;
     }

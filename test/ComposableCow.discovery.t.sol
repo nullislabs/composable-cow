@@ -11,7 +11,7 @@ import {IOrderModule} from "../src/interfaces/IOrderModule.sol";
 import {OrderDescriptor} from "../src/OrderDescriptor.sol";
 import {OrderModule} from "../src/OrderModule.sol";
 import {StopLoss} from "../src/types/StopLoss.sol";
-import {DigestKind} from "../src/interfaces/DigestKind.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 error TestNoOrder();
 
@@ -19,7 +19,7 @@ error TestNoOrder();
  * @dev Minimal handler committing a module: the OrderModule mixin under test
  */
 contract ModuleHandler is OrderModule {
-    constructor(string[] memory uris, bytes32 digest, DigestKind kind) OrderModule(uris, digest, kind) {}
+    constructor(string[] memory uris, bytes32 digest, PackageKind kind) OrderModule(uris, digest, kind) {}
 
     function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
         public
@@ -49,7 +49,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      super chain
      */
     function test_descriptor_CommittedAdvertisesAndRoundTrips() public {
-        StopLoss handler = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, DigestKind.BZZ);
+        StopLoss handler = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
 
         assertTrue(handler.supportsInterface(type(IOrderDescriptor).interfaceId));
         assertTrue(handler.supportsInterface(type(IConditionalOrderGenerator).interfaceId));
@@ -58,9 +58,9 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
         assertFalse(handler.supportsInterface(type(IOrderModule).interfaceId));
 
         assertEq(handler.descriptorURI()[0], testDescriptorUris()[0]);
-        (bytes32 digest, DigestKind kind) = handler.descriptorCommitment();
+        (bytes32 digest, PackageKind kind) = handler.descriptorCommitment();
         assertEq(digest, TEST_DESCRIPTOR_DIGEST);
-        assertEq(uint256(kind), uint256(DigestKind.BZZ));
+        assertEq(uint256(kind), uint256(PackageKind.BZZ_MANIFEST));
     }
 
     /**
@@ -68,7 +68,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      sidecar - feature detection never lies about empty metadata
      */
     function test_descriptor_UncommittedDoesNotAdvertise() public {
-        StopLoss handler = new StopLoss(new string[](0), bytes32(0), DigestKind.BZZ);
+        StopLoss handler = new StopLoss(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
 
         assertFalse(handler.supportsInterface(type(IOrderDescriptor).interfaceId));
         // the handler remains a fully functional generator
@@ -81,8 +81,8 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      */
     function test_descriptor_ConstructorEmitsUpdate() public {
         vm.expectEmit(true, true, true, true);
-        emit IOrderDescriptor.DescriptorUpdate(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, DigestKind.BZZ);
-        new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, DigestKind.BZZ);
+        emit IOrderDescriptor.DescriptorUpdate(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
+        new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
     }
 
     // --- module ---
@@ -94,15 +94,15 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
         bytes32 digest = keccak256("module component bytes");
 
         vm.expectEmit(true, true, true, true);
-        emit IOrderModule.ModuleUpdate(moduleUris(), digest, DigestKind.BZZ);
-        ModuleHandler handler = new ModuleHandler(moduleUris(), digest, DigestKind.BZZ);
+        emit IOrderModule.ModuleUpdate(moduleUris(), digest, PackageKind.BZZ_MANIFEST);
+        ModuleHandler handler = new ModuleHandler(moduleUris(), digest, PackageKind.BZZ_MANIFEST);
 
         assertTrue(handler.supportsInterface(type(IOrderModule).interfaceId));
         assertFalse(handler.supportsInterface(type(IOrderDescriptor).interfaceId));
         assertEq(handler.moduleURI()[0], moduleUris()[0]);
-        (bytes32 got, DigestKind kind) = handler.moduleCommitment();
+        (bytes32 got, PackageKind kind) = handler.moduleCommitment();
         assertEq(got, digest);
-        assertEq(uint256(kind), uint256(DigestKind.BZZ));
+        assertEq(uint256(kind), uint256(PackageKind.BZZ_MANIFEST));
     }
 
     /**
@@ -111,7 +111,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      */
     function test_module_RevertsUncommittedURI() public {
         vm.expectRevert(OrderModule.UncommittedModuleURI.selector);
-        new ModuleHandler(moduleUris(), bytes32(0), DigestKind.BZZ);
+        new ModuleHandler(moduleUris(), bytes32(0), PackageKind.BZZ_MANIFEST);
     }
 
     /**
@@ -119,7 +119,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      */
     function test_module_RevertsSha256WithoutURI() public {
         vm.expectRevert(OrderModule.ModuleURIRequired.selector);
-        new ModuleHandler(new string[](0), keccak256("pkg"), DigestKind.SHA256);
+        new ModuleHandler(new string[](0), keccak256("pkg"), PackageKind.TAR_ZST);
     }
 
     /**
@@ -127,7 +127,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      advertises with no URI published at all
      */
     function test_module_ContentAddressedNeedsNoURI() public {
-        ModuleHandler handler = new ModuleHandler(new string[](0), keccak256("pkg"), DigestKind.BZZ);
+        ModuleHandler handler = new ModuleHandler(new string[](0), keccak256("pkg"), PackageKind.BZZ_MANIFEST);
         assertTrue(handler.supportsInterface(type(IOrderModule).interfaceId));
         assertEq(handler.moduleURI().length, 0);
     }
@@ -136,7 +136,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      * @dev No module committed: no advertising, handler still functions
      */
     function test_module_UncommittedDoesNotAdvertise() public {
-        ModuleHandler handler = new ModuleHandler(new string[](0), bytes32(0), DigestKind.BZZ);
+        ModuleHandler handler = new ModuleHandler(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
         assertFalse(handler.supportsInterface(type(IOrderModule).interfaceId));
         assertTrue(handler.supportsInterface(type(IConditionalOrderGenerator).interfaceId));
     }
@@ -146,7 +146,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      empty - the discovery trigger end to end
      */
     function test_module_NeedsInputSignal() public {
-        ModuleHandler handler = new ModuleHandler(moduleUris(), keccak256("module"), DigestKind.BZZ);
+        ModuleHandler handler = new ModuleHandler(moduleUris(), keccak256("module"), PackageKind.BZZ_MANIFEST);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
             handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));

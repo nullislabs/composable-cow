@@ -18,7 +18,7 @@ import {StopLoss} from "../src/types/StopLoss.sol";
 
 // Value factories
 import {CurrentBlockTimestampFactory} from "../src/value_factories/CurrentBlockTimestampFactory.sol";
-import {DigestKind} from "../src/interfaces/DigestKind.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 contract DeployProdStack is Script {
     function run() external {
@@ -34,11 +34,11 @@ contract DeployProdStack is Script {
         ComposableCow composableCow = new ComposableCow{salt: "v1.0.0"}(settlement);
 
         // Deploy order types
-        new TWAP{salt: "v1.0.0"}(composableCow, new string[](0), bytes32(0), DigestKind.BZZ);
-        new GoodAfterTime{salt: "v1.0.0"}(new string[](0), bytes32(0), DigestKind.BZZ);
-        new PerpetualStableSwap{salt: "v1.0.0"}(new string[](0), bytes32(0), DigestKind.BZZ);
+        new TWAP{salt: "v1.0.0"}(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new GoodAfterTime{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new PerpetualStableSwap{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
         new TradeAboveThreshold{salt: "v1.0.0"}();
-        new StopLoss{salt: "v1.0.0"}(new string[](0), bytes32(0), DigestKind.BZZ);
+        new StopLoss{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
 
         // Deploy value factories
         new CurrentBlockTimestampFactory{salt: "v1.0.0"}();

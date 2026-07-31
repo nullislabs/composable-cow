@@ -25,7 +25,7 @@ import {TWAP} from "../src/types/twap/TWAP.sol";
 import {GoodAfterTime} from "../src/types/GoodAfterTime.sol";
 import {PerpetualStableSwap} from "../src/types/PerpetualStableSwap.sol";
 import {TradeAboveThreshold} from "../src/types/TradeAboveThreshold.sol";
-import {DigestKind} from "../src/interfaces/DigestKind.sol";
+import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
 contract DeployAnvilStack is Script {
     // --- constants
@@ -62,9 +62,9 @@ contract DeployAnvilStack is Script {
 
         // deploy the Composable CoW
         ComposableCow composableCow = new ComposableCow(address(settlement));
-        new TWAP(composableCow, new string[](0), bytes32(0), DigestKind.BZZ);
-        new GoodAfterTime(new string[](0), bytes32(0), DigestKind.BZZ);
-        new PerpetualStableSwap(new string[](0), bytes32(0), DigestKind.BZZ);
+        new TWAP(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new GoodAfterTime(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new PerpetualStableSwap(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
         new TradeAboveThreshold();
 
         vm.stopBroadcast();

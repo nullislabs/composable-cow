@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {DigestKind} from "./DigestKind.sol";
+import {PackageKind} from "./PackageKind.sol";
 
 /**
  * @title Order Descriptor - declarative handler metadata for discovery
@@ -18,13 +18,13 @@ interface IOrderDescriptor {
      * @dev MUST be emitted from the constructor of implementing contracts so
      *      indexers discover the descriptor without polling.
      */
-    event DescriptorUpdate(string[] uris, bytes32 digest, DigestKind kind);
+    event DescriptorUpdate(string[] uris, bytes32 digest, PackageKind kind);
 
     /**
      * @notice Locations of the handler descriptor document.
-     * @dev Empty for content-addressed kinds, which the commitment locates.
-     *      Non-empty for `SHA256`. Any URI listed is a retrieval hint and MUST
-     *      resolve to the same document bytes, never alternative content.
+     * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Non-empty
+     *      for `TAR_ZST`. Any URI listed is a retrieval hint and MUST resolve
+     *      to the same document bytes, never alternative content.
      */
     function descriptorURI() external view returns (string[] memory uris);
 
@@ -34,5 +34,5 @@ interface IOrderDescriptor {
      *      MUST verify fetched bytes against it before parsing. `bytes32(0)`
      *      means uncommitted; treat such descriptors as absent.
      */
-    function descriptorCommitment() external view returns (bytes32 digest, DigestKind kind);
+    function descriptorCommitment() external view returns (bytes32 digest, PackageKind kind);
 }

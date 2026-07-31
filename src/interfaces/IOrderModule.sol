@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {DigestKind} from "./DigestKind.sol";
+import {PackageKind} from "./PackageKind.sol";
 
 /**
  * @title Order Module - executable client module for custom handlers
@@ -18,13 +18,13 @@ interface IOrderModule {
      * @notice Emitted when the module location or commitment changes.
      * @dev MUST be emitted from the constructor of implementing contracts.
      */
-    event ModuleUpdate(string[] uris, bytes32 digest, DigestKind kind);
+    event ModuleUpdate(string[] uris, bytes32 digest, PackageKind kind);
 
     /**
      * @notice Locations of the module package.
-     * @dev Empty for content-addressed kinds, which the commitment locates.
-     *      Non-empty for `SHA256`. Any URI listed is a retrieval hint and MUST
-     *      resolve to the same package.
+     * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Non-empty
+     *      for `TAR_ZST`. Any URI listed is a retrieval hint and MUST resolve
+     *      to the same package.
      */
     function moduleURI() external view returns (string[] memory uris);
 
@@ -36,5 +36,5 @@ interface IOrderModule {
      *      same code. Consumers MUST verify the package against it before
      *      execution and MUST NOT serve cached bytes against any other key.
      */
-    function moduleCommitment() external view returns (bytes32 digest, DigestKind kind);
+    function moduleCommitment() external view returns (bytes32 digest, PackageKind kind);
 }
