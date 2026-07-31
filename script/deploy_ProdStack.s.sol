@@ -28,19 +28,19 @@ contract DeployProdStack is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy ExtensibleFallbackHandler
-        new ExtensibleFallbackHandler{salt: "v1.0.0"}();
+        new ExtensibleFallbackHandler{salt: bytes32(0)}();
 
         // Deploy ComposableCow
-        ComposableCow composableCow = new ComposableCow{salt: "v1.0.0"}(settlement);
+        ComposableCow composableCow = new ComposableCow{salt: bytes32(0)}(settlement);
 
         // Deploy order types
-        new TWAP{salt: "v1.0.0"}(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new GoodAfterTime{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new PerpetualStableSwap{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new TradeAboveThreshold{salt: "v1.0.0"}();
-        new StopLoss{salt: "v1.0.0"}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new TWAP{salt: bytes32(0)}(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new GoodAfterTime{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new PerpetualStableSwap{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new TradeAboveThreshold{salt: bytes32(0)}();
+        new StopLoss{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
 
         // Deploy value factories
-        new CurrentBlockTimestampFactory{salt: "v1.0.0"}();
+        new CurrentBlockTimestampFactory{salt: bytes32(0)}();
     }
 }
