@@ -84,8 +84,11 @@ contract ComposableCowGuardsTest is BaseComposableCowTest {
         // should not return a signature as the swap guard doesn't allow it
         (ComposableCow.PollResult memory guardedRes, bytes memory guardedSig) =
             composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), proof);
-        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
-        assertEq(guardedRes.generator.reasonCode, ComposableCow.SwapGuardRestricted.selector);
+        // The generator verdict survives the restriction: POST stays visible,
+        // the overlay carries the guard, and no signature is built
+        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(guardedRes.generator.reasonCode, bytes4(0));
+        assertEq(uint256(guardedRes.restriction), uint256(ComposableCow.Restriction.SWAP_GUARD));
         assertEq(guardedSig.length, 0);
 
         // should set the swap guard to the odd swap guard
@@ -141,8 +144,11 @@ contract ComposableCowGuardsTest is BaseComposableCowTest {
         (ComposableCow.PollResult memory guardedRes, bytes memory guardedSig) = composableCow.getTradeableOrderWithSignature(
             address(safe1), params, abi.encode(orderOtherReceiver), new bytes32[](0)
         );
-        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
-        assertEq(guardedRes.generator.reasonCode, ComposableCow.SwapGuardRestricted.selector);
+        // The generator verdict survives the restriction: POST stays visible,
+        // the overlay carries the guard, and no signature is built
+        assertEq(uint256(guardedRes.generator.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
+        assertEq(guardedRes.generator.reasonCode, bytes4(0));
+        assertEq(uint256(guardedRes.restriction), uint256(ComposableCow.Restriction.SWAP_GUARD));
         assertEq(guardedSig.length, 0);
 
         // should revert as the receiver is not the safe
