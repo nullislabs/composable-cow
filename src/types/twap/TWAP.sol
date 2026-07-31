@@ -60,8 +60,8 @@ contract TWAP is OrderDescriptor {
         override
         returns (GPv2Order.Data memory order)
     {
-        /**
-         * @dev Decode the payload into a TWAP bundle and get the order. `orderFor` will revert if
+        /*
+         * Decode the payload into a TWAP bundle and get the order. `orderFor` will revert if
          * there is no current valid order.
          * NOTE: This will return an order even if the part of the TWAP bundle that is currently
          * valid is filled. This is safe as CoW Protocol ensures that each `orderUid` is only
@@ -71,8 +71,8 @@ contract TWAP is OrderDescriptor {
 
         order = TWAPOrder.orderFor(twap);
 
-        /**
-         * @dev If outside the current part's span, this is a scheduling gap, not a
+        /*
+         * If outside the current part's span, this is a scheduling gap, not a
          * permanent failure: signal when the next part starts, or terminate if
          * there is no next part.
          */
@@ -215,9 +215,7 @@ contract TWAP is OrderDescriptor {
     {
         twap = abi.decode(staticInput, (TWAPOrder.Data));
 
-        /**
-         * @dev If `twap.t0` is set to 0, then get the start time from the context.
-         */
+        // If `twap.t0` is set to 0, then get the start time from the context.
         if (twap.t0 == 0) {
             twap.t0 = uint256(composableCow.cabinet(owner, ctx));
         }

@@ -97,10 +97,10 @@ contract DeployAnvilStack is Script {
         GPv2AllowListAuthentication allowList = new GPv2AllowListAuthentication();
         allowList.initializeManager(all);
 
-        /// @dev the settlement contract is the main entry point for the CoW Protocol
+        // the settlement contract is the main entry point for the CoW Protocol
         settlement = new GPv2Settlement(allowList, vault);
 
-        /// @dev the relayer is the account authorized to spend the user's tokens
+        // the relayer is the account authorized to spend the user's tokens
         relayer = address(settlement.vaultRelayer());
 
         // authorize the solver

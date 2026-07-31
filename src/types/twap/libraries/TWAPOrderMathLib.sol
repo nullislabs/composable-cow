@@ -32,8 +32,8 @@ library TWAPOrderMathLib {
         view
         returns (uint256 validTo)
     {
-        /**
-         * @dev Use `assert` to check for invalid inputs as these should be caught by the
+        /*
+         * Use `assert` to check for invalid inputs as these should be caught by the
          * conditional order validation logic in `dispatch` before calling this function.
          * This is to save on gas deployment costs vs using `require` statements.
          */
@@ -42,15 +42,17 @@ library TWAPOrderMathLib {
         assert(span <= frequency);
 
         unchecked {
-            /// @dev Order is not yet valid before the start (order commences at `t0`);
-            ///      a monitoring service should try again at the start time.
+            /*
+             * Order is not yet valid before the start (order commences at `t0`);
+             * a monitoring service should try again at the start time.
+             */
             require(
                 startTime <= block.timestamp,
                 IConditionalOrderGenerator.PollTryAtTimestamp(startTime, BeforeTwapStart.selector)
             );
 
-            /**
-             *  @dev Order is expired after the last part (`n` parts, running at `t` time length).
+            /*
+             * Order is expired after the last part (`n` parts, running at `t` time length).
              *
              * Multiplication overflow: `numParts` is bounded by `type(uint32).max` and `frequency` is bounded by
              * `365 days` which is smaller than `type(uint32).max` so the product of `numParts * frequency` is
@@ -63,8 +65,8 @@ library TWAPOrderMathLib {
                 IConditionalOrder.OrderNotValid(AfterTwapFinish.selector)
             );
 
-            /**
-             * @dev We use integer division to get the part number as we want to round down to the nearest part.
+            /*
+             * We use integer division to get the part number as we want to round down to the nearest part.
              *
              * Subtraction underflow: `startTime` is asserted to be less than `block.timestamp` so the difference
              * of `block.timestamp - startTime` shall always be positive.
@@ -73,9 +75,9 @@ library TWAPOrderMathLib {
             uint256 part = (block.timestamp - startTime) / frequency;
             // calculate the `validTo` timestamp (inclusive as per `GPv2Order`)
             if (span == 0) {
-                /**
-                 * @dev If the span is zero, then the order is valid for the entire part.
-                 *      We can safely add `part + 1` to `part` as we know that `part` is less than `numParts`.
+                /*
+                 * If the span is zero, then the order is valid for the entire part.
+                 * We can safely add `part + 1` to `part` as we know that `part` is less than `numParts`.
                  *
                  * Addition overflow: `part` is bounded by `numParts` which is bounded by `type(uint32).max` so
                  * the sum of `part + 1` is ≈ 2³².
@@ -90,8 +92,8 @@ library TWAPOrderMathLib {
                 return startTime + ((part + 1) * frequency) - 1;
             }
 
-            /**
-             *  @dev If the span is non-zero, then the order is valid for the span of the part.
+            /*
+             * If the span is non-zero, then the order is valid for the span of the part.
              *
              * Multiplication overflow: `part` is bounded by `numParts` which is bounded by `type(uint32).max` with
              * `frequency` bounded by `365 days` which is smaller than `type(uint32).max` so the product of
@@ -105,8 +107,8 @@ library TWAPOrderMathLib {
              */
             validTo = startTime + (part * frequency) + span - 1;
 
-            /**
-             * @dev Order is not valid if not within nominated span. This doesn't need to be asserted as it is
+            /*
+             * Order is not valid if not within nominated span. This doesn't need to be asserted as it is
              * checked during settlement in `GPv2Settlement.settle`.
              */
         }

@@ -41,7 +41,7 @@ contract TradeAboveThreshold is BaseConditionalOrder {
         override
         returns (GPv2Order.Data memory order)
     {
-        /// @dev Decode the payload into the trade above threshold parameters.
+        // Decode the payload into the trade above threshold parameters.
         TradeAboveThreshold.Data memory data = abi.decode(staticInput, (Data));
 
         uint256 balance = data.sellToken.balanceOf(owner);

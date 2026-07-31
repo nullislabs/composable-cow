@@ -44,7 +44,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
     ) external view override {
         GPv2Order.Data memory generatedOrder = generateOrder(owner, sender, ctx, staticInput, offchainInput);
 
-        /// @dev Verify that the *generated* order is valid and matches the payload.
+        // Verify that the *generated* order is valid and matches the payload.
         require(
             _hash == GPv2Order.hash(generatedOrder, domainSeparator),
             IConditionalOrder.OrderNotValid(InvalidHash.selector)

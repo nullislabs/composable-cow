@@ -61,7 +61,7 @@ contract PerpetualStableSwap is OrderDescriptor {
         override
         returns (GPv2Order.Data memory order)
     {
-        /// @dev Decode the payload into the perpetual stable swap parameters.
+        // Decode the payload into the perpetual stable swap parameters.
         PerpetualStableSwap.Data memory data = abi.decode(staticInput, (Data));
 
         // Always sell whatever of the two tokens we have more of
