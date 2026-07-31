@@ -247,6 +247,24 @@ struct PollResult {
 
 `INVALIDATED` is distinct from `FILLED`: `GPv2Settlement.invalidateOrder` sets `filledAmount` to `type(uint256).max`, which is a cancellation, not a fill.
 
+`filledAmount` is denominated per order kind, matching `GPv2Settlement.computeTradeExecution`: a sell order accumulates `executedSellAmount` bounded by `order.sellAmount`, a buy order accumulates `executedBuyAmount` bounded by `order.buyAmount`. The overlay compares against the matching field, so the same observed amount can be a complete fill of one side and a partial fill of the other.
+
+#### Scope: per-order, not per-intent
+
+The overlay is keyed by `orderUid`, which is `H(order, domainSeparator) || owner || validTo`. It therefore reports the fill state of *the discrete order this poll produced*, not a running total across every order a conditional order has ever produced.
+
+That is a deliberate limit rather than an omission, because the registry cannot maintain a running total:
+
+- every polling entry point is `view`, so none can write an accumulator;
+- nothing notifies the registry of a settlement — `GPv2Settlement` has no callback, and the registry's only interaction with it is a single keyed read;
+- `GPv2Settlement` stores `mapping(bytes => uint256) filledAmount` and exposes no aggregate to read instead.
+
+Computing a total on read would mean enumerating every discrete order ever derived from the context and summing each one's `filledAmount`. Only the handler knows that set (via `IOrderManifest`), it is unbounded in general, and the registry gates on `IConditionalOrderGenerator` rather than the manifest, so it cannot rely on it.
+
+A bounded-total intent is expressible today by making the discrete order **stable**: with fixed parameters and `validTo`, the order maps to one `orderUid`, and that single entry *is* the accumulator. Per-order tracking is exactly right for such a handler.
+
+The gap is only for an intent whose discrete order deliberately varies between polls, for example one whose acceptable price moves. There the total is not a chain-observable quantity at any single key, and tracking it belongs to the monitoring service, which already sees every poll and can accumulate per context off-chain.
+
 ### nextPollTimestamp Semantics
 
 | Value | Meaning |
