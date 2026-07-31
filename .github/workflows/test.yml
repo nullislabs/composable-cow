@@ -1,11 +1,17 @@
 name: test
 
-on: 
-  workflow_dispatch:
+on:
+  # Unfiltered: a stacked PR targets its parent branch, not `develop`, so a
+  # `branches: [develop]` filter would only ever check the head of the train.
   pull_request:
   push:
-    paths-ignore:
-      - "**/*.md"
+    branches: [develop]
+  workflow_dispatch:
+
+# Supersede in-flight runs: a rebased train force-pushes every branch at once.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FOUNDRY_PROFILE: ci
@@ -23,15 +29,20 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de # v1.4.0
         with:
-          version: v1.2.3
+          # Bytecode is pinned by `solc_version` in foundry.toml, so the forge
+          # version affects tooling rather than output.
+          version: stable
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --skip test
-        id: build
+      - name: Show versions
+        run: forge --version
 
-      - name: Run Forge tests
-        run: |
-          forge test -vvv --optimize --optimizer-runs 20000 --no-match-test "fork|simulate" --fuzz-seed 672679878
-        id: test
+      - name: Check formatting
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build
+
+      - name: Test
+        # `fork` needs an archive-node RPC and is not run here. The fuzz seed is
+        # pinned so a failure is reproducible from the log alone.
+        run: forge test -vvv --no-match-test "fork" --fuzz-seed 672679878
