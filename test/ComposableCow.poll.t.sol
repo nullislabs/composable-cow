@@ -425,6 +425,18 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         internal
         returns (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler)
     {
+        return _successOrderOfKind(partiallyFillable, GPv2Order.KIND_SELL);
+    }
+
+    /**
+     * @dev As `_successOrder`, for a given order kind. `sellAmount` and
+     *      `buyAmount` deliberately differ so a single filled amount can be a
+     *      partial fill of one side and a complete fill of the other.
+     */
+    function _successOrderOfKind(bool partiallyFillable, bytes32 kind)
+        internal
+        returns (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler)
+    {
         handler = new SuccessHandler();
         handler.setOrder(
             GPv2Order.Data({
@@ -436,7 +448,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
                 validTo: uint32(block.timestamp + 1 hours),
                 appData: keccak256("fill-overlay"),
                 feeAmount: 0,
-                kind: GPv2Order.KIND_SELL,
+                kind: kind,
                 partiallyFillable: partiallyFillable,
                 sellTokenBalance: GPv2Order.BALANCE_ERC20,
                 buyTokenBalance: GPv2Order.BALANCE_ERC20
@@ -455,6 +467,103 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         vm.mockCall(
             address(composableCow.settlement()), abi.encodeWithSignature("filledAmount(bytes)"), abi.encode(amount)
         );
+    }
+
+    /**
+     * @dev Mock `filledAmount` for one exact orderUid. `_mockFilledAmount`
+     *      matches on the selector alone, so every uid returns the same value
+     *      and a wrong uid construction cannot be detected; this matches the
+     *      full calldata instead.
+     */
+    function _mockFilledAmountFor(bytes memory orderUid, uint256 amount) internal {
+        vm.mockCall(
+            address(composableCow.settlement()),
+            abi.encodeWithSignature("filledAmount(bytes)", orderUid),
+            abi.encode(amount)
+        );
+    }
+
+    /**
+     * @dev Build the GPv2 orderUid the registry is expected to construct:
+     *      `H(order, domainSeparator) || owner || validTo`.
+     */
+    function _expectedOrderUid(GPv2Order.Data memory order, address owner) internal view returns (bytes memory) {
+        return abi.encodePacked(GPv2Order.hash(order, composableCow.domainSeparator()), owner, order.validTo);
+    }
+
+    /**
+     * @dev The registry hand-builds the orderUid it queries. Mocking one exact
+     *      uid pins that construction: any other uid misses the mock, reaches
+     *      the real settlement, and reads zero, leaving the overlay at NONE.
+     */
+    function test_fillOverlay_OrderUidMatchesGPv2Construction() public {
+        (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler) = _successOrder(true);
+        GPv2Order.Data memory order = handler.generateOrder(address(0), address(0), bytes32(0), bytes(""), bytes(""));
+
+        _mockFilledAmountFor(_expectedOrderUid(order, address(safe1)), 100e18);
+
+        (ComposableCow.PollResult memory result,) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCow.FillStatus.FILLED));
+        assertEq(result.filledAmount, 100e18);
+    }
+
+    /**
+     * @dev The owner is part of the uid, so a fill recorded against another
+     *      owner's uid for the same order must not be observed.
+     */
+    function test_fillOverlay_ForeignOwnerOrderUidNotObserved() public {
+        (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler) = _successOrder(true);
+        GPv2Order.Data memory order = handler.generateOrder(address(0), address(0), bytes32(0), bytes(""), bytes(""));
+
+        _mockFilledAmountFor(_expectedOrderUid(order, address(this)), 100e18);
+
+        (ComposableCow.PollResult memory result,) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCow.FillStatus.NONE));
+        assertEq(result.filledAmount, 0);
+    }
+
+    /**
+     * @dev `GPv2Settlement.computeTradeExecution` accumulates
+     *      `executedSellAmount` for KIND_SELL and `executedBuyAmount` for
+     *      KIND_BUY, each bounded by the matching order field. `filledAmount`
+     *      is therefore denominated in the sell token for a sell order and the
+     *      buy token for a buy order, and the overlay must compare against the
+     *      matching field.
+     *
+     *      50e18 is half of the 100e18 sell side but all of the 50e18 buy side,
+     *      so the same observed amount must resolve differently per kind. If
+     *      the overlay used `sellAmount` for both, the buy case below would
+     *      report PARTIALLY_FILLED and the order would keep being posted after
+     *      it was complete.
+     */
+    function test_fillOverlay_KindBuyTotalIsBuyAmount() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrderOfKind(true, GPv2Order.KIND_BUY);
+        _mockFilledAmount(50e18);
+
+        (ComposableCow.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCow.FillStatus.FILLED));
+        assertEq(signature.length, 0, "a complete buy order is not re-postable");
+    }
+
+    /**
+     * @dev The sell-side counterpart of the case above: the identical observed
+     *      amount is only a partial fill.
+     */
+    function test_fillOverlay_KindSellSameAmountIsPartial() public {
+        (IConditionalOrder.ConditionalOrderParams memory params,) = _successOrder(true);
+        _mockFilledAmount(50e18);
+
+        (ComposableCow.PollResult memory result, bytes memory signature) =
+            composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
+
+        assertEq(uint256(result.fill), uint256(ComposableCow.FillStatus.PARTIALLY_FILLED));
+        assertGt(signature.length, 0, "the remainder is still postable");
     }
 
     /**
@@ -490,6 +599,10 @@ contract ComposableCowPollTest is BaseComposableCowTest {
     }
 
     /**
+     * @dev Defensive branch. GPv2 settles a fill-or-kill order in one go
+     *      (`computeTradeExecution` takes the whole `sellAmount`/`buyAmount`),
+     *      so a partial fill on one is unreachable in practice and only
+     *      arises here because `filledAmount` is mocked directly.
      * @dev A partial fill on a fill-or-kill order does not return a signature
      */
     function test_fillOverlay_PartialFillOnFillOrKillWithholdsSignature() public {
