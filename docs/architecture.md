@@ -137,7 +137,9 @@ signature emitted iff verdict == POST and the order is postable:
 
 **Characteristics**:
 - Returns a structured `PollResult`; never reverts for order conditions (only for authorization and handler-interface failures).
-- The handler's verdict and the observed fill state are orthogonal: a `POST` verdict coexists with `PARTIALLY_FILLED`, which is what lets a partially filled `partiallyFillable` order keep being posted until fully filled.
+- The handler's verdict and the observed fill state are orthogonal: a `POST` verdict coexists with `PARTIALLY_FILLED`. `POST` asserts that the discrete order is valid, not that a consumer must act on it.
+- A signature is withheld only for fill states the chain proves terminal: `FILLED`, `INVALIDATED`, and any recorded fill on a fill-or-kill order. A partial fill on a `partiallyFillable` order is not terminal, so a valid signature is still returned.
+- Note that a recorded fill also implies the discrete order was already accepted by the orderbook and settled, so it stays solvable there until `validTo`. Continued filling of the remainder does not depend on a monitoring service re-posting it. The registry is an on-chain view and cannot observe orderbook state, so it reports validity and leaves the posting decision to the consumer rather than asserting that the order is still listed.
 - Includes scheduling hints (`nextPollTimestamp` and `waitUntil`).
 - Carries machine-readable reason selectors for debugging; names resolve from the handler ABI.
 - If the swap guard restricts the order, the returned verdict is forced to `INVALID` with `reasonCode = SwapGuardRestricted.selector` and no signature is emitted.
