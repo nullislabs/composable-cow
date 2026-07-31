@@ -9,7 +9,7 @@ ERC-1271 is the standard for smart contract signature verification, allowing con
 The architecture separates two distinct execution paths:
 
 1. **Settlement Path** — on-chain verification during trade execution (gas-sensitive).
-2. **Polling Path** — off-chain queries by off-chain monitoring service (historically called a watch-tower)s (gas-irrelevant).
+2. **Polling Path** — off-chain queries by monitoring services (historically called watch-towers) (gas-irrelevant).
 
 This separation ensures settlement remains gas-efficient while providing rich metadata for off-chain infrastructure.
 
@@ -99,7 +99,7 @@ ComposableCow.isValidSafeSignature(...)     Signature validation
 ### Polling Path (Off-Chain)
 
 ```
-Watch-Tower
+Monitoring Service
     │
     ▼
 ComposableCow.getTradeableOrderWithSignature(...)
