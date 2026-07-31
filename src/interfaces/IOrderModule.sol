@@ -23,7 +23,7 @@ interface IOrderModule {
     /**
      * @notice Locations of the module package.
      * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Non-empty
-     *      for `TAR_ZST`. Any URI listed is a retrieval hint and MUST resolve
+     *      for `SHA256`. Any URI listed is a retrieval hint and MUST resolve
      *      to the same package.
      */
     function moduleURI() external view returns (string[] memory uris);

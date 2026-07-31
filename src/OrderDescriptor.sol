@@ -24,9 +24,15 @@ abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
     error UncommittedDescriptorURI();
 
     /**
-     * @dev `TAR_ZST` does not locate the document, so it requires a URI
+     * @dev `SHA256` does not locate the document, so it requires a URI
      */
     error DescriptorURIRequired();
+
+    /**
+     * @dev A `BZZ_MANIFEST` commitment locates its own document; a URI could not
+     *      be verified against a structure root anyway
+     */
+    error DescriptorURINotUsed();
 
     string[] private _descriptorUris;
     bytes32 private immutable _DESCRIPTOR_DIGEST;
@@ -34,7 +40,11 @@ abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
 
     constructor(string[] memory uris, bytes32 digest, PackageKind kind) {
         if (digest != bytes32(0)) {
-            require(kind != PackageKind.TAR_ZST || uris.length > 0, DescriptorURIRequired());
+            if (kind == PackageKind.SHA256) {
+                require(uris.length > 0, DescriptorURIRequired());
+            } else {
+                require(uris.length == 0, DescriptorURINotUsed());
+            }
             emit DescriptorUpdate(uris, digest, kind);
         } else {
             require(uris.length == 0, UncommittedDescriptorURI());

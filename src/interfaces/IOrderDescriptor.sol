@@ -23,7 +23,7 @@ interface IOrderDescriptor {
     /**
      * @notice Locations of the handler descriptor document.
      * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Non-empty
-     *      for `TAR_ZST`. Any URI listed is a retrieval hint and MUST resolve
+     *      for `SHA256`. Any URI listed is a retrieval hint and MUST resolve
      *      to the same document bytes, never alternative content.
      */
     function descriptorURI() external view returns (string[] memory uris);

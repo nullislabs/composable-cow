@@ -51,7 +51,7 @@ described in RFC 2119.
 - **Content addressing locates as well as verifies.** A `BZZ_MANIFEST`
   commitment already names where the bytes live, so a handler publishes no URI
   and no gateway is written into a deployed contract. Retrieval is the host's
-  concern. URIs exist for `TAR_ZST`, where the digest locates nothing.
+  concern. URIs exist for `SHA256`, where the digest locates nothing.
 - **Fail closed.** Unknown URI schemes, unsupported or reverting views, and
   unverifiable documents are treated as "no discovery", never as errors to
   retry aggressively and never as data to trust.
@@ -59,20 +59,22 @@ described in RFC 2119.
 ## 0. Commitments
 
 Descriptors (§1) and modules (§2) are both committed to on-chain as a
-`(bytes32 digest, PackageKind kind)` pair. `kind` names how the bytes are
-packaged and therefore how the digest is computed and verified.
+`(bytes32 digest, PackageKind kind)` pair. `kind` names how the digest is
+computed, and therefore how it is verified. What the committed bytes *are* is
+fixed per surface rather than by the kind: a module commits to a `.tar.zst`
+package, a descriptor to its JSON document.
 
 ```solidity
 enum PackageKind {
-    BZZ_MANIFEST, // mantaray manifest root
-    TAR_ZST       // sha256 of a .tar.zst archive
+    BZZ_MANIFEST, // Swarm BMT root
+    SHA256        // sha256 over the published bytes
 }
 ```
 
 The two kinds trade the same two properties against each other, and a
 publisher picks which one it wants:
 
-| | `BZZ_MANIFEST` | `TAR_ZST` |
+| | `BZZ_MANIFEST` | `SHA256` |
 |---|---|---|
 | locates itself | yes, the root is the Swarm reference | no, a URI is required |
 | verification | per entry, from BMT roots in the manifest | whole archive, in one pass |
@@ -81,7 +83,7 @@ publisher picks which one it wants:
 
 The asymmetry is structural rather than a preference. A mantaray root is a
 hash over a *structure*, so only Swarm can recompute it; that is exactly what
-buys per-entry verification and costs cross-scheme mirroring. A `TAR_ZST`
+buys per-entry verification and costs cross-scheme mirroring. A `SHA256`
 digest is a hash over *bytes*, so any transport can be checked by hashing what
 it delivered, at the cost of verifying nothing until the whole archive is in
 hand.
@@ -93,12 +95,13 @@ the exact bytes published.
 ### 0.1 Location
 
 `BZZ_MANIFEST` is content-addressed: the commitment names the bytes, so it also
-locates them. The URI list SHOULD be empty and a host resolves the digest
-through whatever Swarm access it has. A handler that lists URIs anyway supplies
-non-normative hints; a host MAY use them and MUST still verify against the
-commitment.
+locates them. Its URI list MUST be empty, and implementations reject a
+commitment that carries one. A URI here would not merely be redundant: a
+gateway serves resolved file content rather than chunks, so bytes fetched from
+one cannot be checked against a structure root at all. Publishing one would
+write a gateway into a deployed contract in exchange for nothing.
 
-`TAR_ZST` is not self-locating. Its URI list MUST be non-empty. Any scheme may
+`SHA256` is not self-locating. Its URI list MUST be non-empty. Any scheme may
 appear there, including `ipfs://`, which verifies its own content in transit
 but whose CID is not the commitment: a UnixFS CID depends on chunker and DAG
 layout, which are publisher settings rather than properties of the content, so
@@ -113,8 +116,10 @@ absent rather than fetching anything.
 the manifest carries for it. A single document (a descriptor) is committed to
 as a leaf rather than a manifest.
 
-`TAR_ZST`: fetch the archive from any URI, verify `sha256(archive)` equals the
-digest, then extract. Verifying the archive authenticates every byte in it, so
+`SHA256`: fetch the bytes from any URI and verify their `sha256` equals the
+digest. For a descriptor those bytes are the document and verification ends
+there. For a module they are the `.tar.zst` package, which is then extracted;
+verifying the archive authenticates every byte in it, so
 no per-entry digest is declared anywhere. Restating entry digests inside the
 package would create a second source of truth and a disagreement to specify
 around, without adding a check.
@@ -129,10 +134,12 @@ Consumers MUST, before writing anything:
 
 ### 0.3 Compression
 
-Each container compresses at the level it can, so the component is stored
-differently in each and `nexum.toml` is byte-identical across both:
+This concerns module packages; a descriptor is a single document and is
+published as-is. Each container compresses at the level it can, so the
+component is stored differently in each while `nexum.toml` stays
+byte-identical across both:
 
-- `TAR_ZST`: entries are stored uncompressed; the archive compresses them.
+- `SHA256`: entries are stored uncompressed; the archive compresses them.
 - `BZZ_MANIFEST`: mantaray has no archive-level compression, so the component
   is stored zstd-compressed at `<component>.zst`, which is worth doing on a
   network that charges per chunk. `nexum.toml` is stored uncompressed: it is
@@ -157,7 +164,7 @@ interface IOrderDescriptor {
     /**
      * @notice Locations of the handler descriptor document.
      * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Required
-     *      for `TAR_ZST`. Any URI listed is a hint: all MUST resolve to the
+     *      for `SHA256`. Any URI listed is a hint: all MUST resolve to the
      *      same document bytes, never alternative content.
      */
     function descriptorURI() external view returns (string[] memory uris);
@@ -196,9 +203,9 @@ governs retrieval only. Where a URI is used it MUST be one of:
 | Scheme | Used with |
 |---|---|
 | `bzz://` | `BZZ_MANIFEST`, as a hint; the commitment already locates the document |
-| `ipfs://` | `TAR_ZST`, as a location; the CID is not the commitment |
+| `ipfs://` | `SHA256`, as a location; the CID is not the commitment |
 | `data:` | either kind, for a document published in-band |
-| `https:` | `TAR_ZST`, the common case |
+| `https:` | `SHA256`, the common case |
 
 `http:`, `file:`, and any URI resolving to loopback, link-local, or private
 address ranges are prohibited. Fetchers SHOULD disable redirects (or re-validate
@@ -206,7 +213,7 @@ every hop against this policy), enforce a size cap (256 KiB RECOMMENDED), and
 enforce a total timeout.
 
 An `https:` URI is never trusted on its own: bytes fetched from one are used
-only after they verify against the commitment, which for `TAR_ZST` is the whole
+only after they verify against the commitment, which for `SHA256` is the whole
 of the integrity argument.
 
 ### 1.3 Document
@@ -298,7 +305,7 @@ interface IOrderModule {
     /**
      * @notice Locations of the module package.
      * @dev Empty for `BZZ_MANIFEST`, which the commitment locates. Required
-     *      for `TAR_ZST`. Any URI listed is a hint.
+     *      for `SHA256`. Any URI listed is a hint.
      */
     function moduleURI() external view returns (string[] memory uris);
 
@@ -494,9 +501,9 @@ pair = "WETH/USDC"
 #### Execution
 
 1. Resolve the commitment (§0.1) and verify it (§0.2), applying the extraction
-   rules for `TAR_ZST`.
+   rules for `SHA256`.
 2. Read `nexum.toml`. Under `BZZ_MANIFEST` this is one entry, verified and
-   parsed before the component is fetched at all; under `TAR_ZST` the whole
+   parsed before the component is fetched at all; under `SHA256` the whole
    archive is already in hand.
 3. Fetch the component, decompressing it under `BZZ_MANIFEST` (§0.3), and
    instantiate it in the `videre:ccow/order-module` world with HTTP restricted

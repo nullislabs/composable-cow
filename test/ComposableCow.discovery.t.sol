@@ -38,7 +38,7 @@ contract ModuleHandler is OrderModule {
 contract ComposableCowDiscoveryTest is BaseComposableCowTest {
     function moduleUris() internal pure returns (string[] memory uris) {
         uris = new string[](1);
-        uris[0] = "bzz://c0ffee";
+        uris[0] = "https://example.com/twap-oracle.tar.zst";
     }
 
     // --- descriptor ---
@@ -49,7 +49,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      super chain
      */
     function test_descriptor_CommittedAdvertisesAndRoundTrips() public {
-        StopLoss handler = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
+        StopLoss handler = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
 
         assertTrue(handler.supportsInterface(type(IOrderDescriptor).interfaceId));
         assertTrue(handler.supportsInterface(type(IConditionalOrderGenerator).interfaceId));
@@ -60,7 +60,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
         assertEq(handler.descriptorURI()[0], testDescriptorUris()[0]);
         (bytes32 digest, PackageKind kind) = handler.descriptorCommitment();
         assertEq(digest, TEST_DESCRIPTOR_DIGEST);
-        assertEq(uint256(kind), uint256(PackageKind.BZZ_MANIFEST));
+        assertEq(uint256(kind), uint256(PackageKind.SHA256));
     }
 
     /**
@@ -81,8 +81,8 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      */
     function test_descriptor_ConstructorEmitsUpdate() public {
         vm.expectEmit(true, true, true, true);
-        emit IOrderDescriptor.DescriptorUpdate(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
-        new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
+        emit IOrderDescriptor.DescriptorUpdate(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
+        new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
     }
 
     // --- module ---
@@ -94,15 +94,15 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
         bytes32 digest = keccak256("module component bytes");
 
         vm.expectEmit(true, true, true, true);
-        emit IOrderModule.ModuleUpdate(moduleUris(), digest, PackageKind.BZZ_MANIFEST);
-        ModuleHandler handler = new ModuleHandler(moduleUris(), digest, PackageKind.BZZ_MANIFEST);
+        emit IOrderModule.ModuleUpdate(moduleUris(), digest, PackageKind.SHA256);
+        ModuleHandler handler = new ModuleHandler(moduleUris(), digest, PackageKind.SHA256);
 
         assertTrue(handler.supportsInterface(type(IOrderModule).interfaceId));
         assertFalse(handler.supportsInterface(type(IOrderDescriptor).interfaceId));
         assertEq(handler.moduleURI()[0], moduleUris()[0]);
         (bytes32 got, PackageKind kind) = handler.moduleCommitment();
         assertEq(got, digest);
-        assertEq(uint256(kind), uint256(PackageKind.BZZ_MANIFEST));
+        assertEq(uint256(kind), uint256(PackageKind.SHA256));
     }
 
     /**
@@ -115,11 +115,21 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
     }
 
     /**
+     * @dev A `BZZ_MANIFEST` commitment locates its own package, so a URI is
+     *      not merely redundant: it could not be verified against a structure
+     *      root, and publishing one would write a gateway into the contract
+     */
+    function test_module_RevertsContentAddressedWithURI() public {
+        vm.expectRevert(OrderModule.ModuleURINotUsed.selector);
+        new ModuleHandler(moduleUris(), keccak256("pkg"), PackageKind.BZZ_MANIFEST);
+    }
+
+    /**
      * @dev `SHA256` does not locate the package, so it requires a URI
      */
     function test_module_RevertsSha256WithoutURI() public {
         vm.expectRevert(OrderModule.ModuleURIRequired.selector);
-        new ModuleHandler(new string[](0), keccak256("pkg"), PackageKind.TAR_ZST);
+        new ModuleHandler(new string[](0), keccak256("pkg"), PackageKind.SHA256);
     }
 
     /**
@@ -146,7 +156,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
      *      empty - the discovery trigger end to end
      */
     function test_module_NeedsInputSignal() public {
-        ModuleHandler handler = new ModuleHandler(moduleUris(), keccak256("module"), PackageKind.BZZ_MANIFEST);
+        ModuleHandler handler = new ModuleHandler(new string[](0), keccak256("module"), PackageKind.BZZ_MANIFEST);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
             handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));

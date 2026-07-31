@@ -76,7 +76,7 @@ contract BaseComposableCowTest is Base, Merkle {
         passThrough = new TestConditionalOrderGenerator();
         mirror = new MirrorConditionalOrder();
 
-        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
+        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
     }
 
     /**

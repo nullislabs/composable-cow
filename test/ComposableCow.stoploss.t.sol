@@ -34,7 +34,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        stopLoss = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.BZZ_MANIFEST);
+        stopLoss = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
     }
 
     function priceToAddress(int256 price) internal returns (address) {

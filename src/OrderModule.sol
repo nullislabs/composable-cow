@@ -20,9 +20,15 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
     error UncommittedModuleURI();
 
     /**
-     * @dev `TAR_ZST` does not locate the package, so it requires a URI
+     * @dev `SHA256` does not locate the package, so it requires a URI
      */
     error ModuleURIRequired();
+
+    /**
+     * @dev A `BZZ_MANIFEST` commitment locates its own package; a URI could not
+     *      be verified against a structure root anyway
+     */
+    error ModuleURINotUsed();
 
     string[] private _moduleUris;
     bytes32 private immutable _MODULE_DIGEST;
@@ -30,7 +36,11 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
 
     constructor(string[] memory uris, bytes32 digest, PackageKind kind) {
         if (digest != bytes32(0)) {
-            require(kind != PackageKind.TAR_ZST || uris.length > 0, ModuleURIRequired());
+            if (kind == PackageKind.SHA256) {
+                require(uris.length > 0, ModuleURIRequired());
+            } else {
+                require(uris.length == 0, ModuleURINotUsed());
+            }
             emit ModuleUpdate(uris, digest, kind);
         } else {
             require(uris.length == 0, UncommittedModuleURI());
