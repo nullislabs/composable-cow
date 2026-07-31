@@ -70,9 +70,9 @@ contract ComposableCow is ISafeSignatureVerifier {
 
     /**
      * @dev The public polling result: the handler's verdict plus the observed
-     *      fill overlay. A `POST` verdict coexists with `PARTIALLY_FILLED`,
-     *      which is what allows a partially filled `partiallyFillable` order
-     *      to keep being posted.
+     *      fill overlay. The two are orthogonal, so a `POST` verdict coexists
+     *      with `PARTIALLY_FILLED`. A signature is withheld only for fill states
+     *      the chain proves terminal.
      * @param generator the handler's verdict (see `IConditionalOrderGenerator`)
      * @param fill observed fill state; only meaningful when the verdict is `POST`
      * @param filledAmount raw `GPv2Settlement.filledAmount` for the discrete
@@ -296,8 +296,9 @@ contract ComposableCow is ISafeSignatureVerifier {
             return (result, bytes(""));
         }
 
-        // A partially filled order is only postable if it is partially fillable;
-        // a partial fill on a fill-or-kill order should not be re-posted
+        // A fill-or-kill order admits no further fill, so any recorded fill is
+        // terminal for it. Defensive: GPv2 settles such an order in one go, so
+        // the observed state should already be `FILLED`.
         if (result.fill == FillStatus.PARTIALLY_FILLED && !result.generator.order.partiallyFillable) {
             return (result, bytes(""));
         }
