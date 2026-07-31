@@ -28,6 +28,7 @@ import {ReceiverLock} from "../src/guards/ReceiverLock.sol";
 import {IValueFactory} from "../src/interfaces/IValueFactory.sol";
 
 import {ISwapGuard, ComposableCow, GPv2Order} from "../src/ComposableCow.sol";
+import {DigestKind} from "../src/interfaces/DigestKind.sol";
 
 contract BaseComposableCowTest is Base, Merkle {
     using ComposableCowLib for IConditionalOrder.ConditionalOrderParams;
@@ -75,7 +76,7 @@ contract BaseComposableCowTest is Base, Merkle {
         passThrough = new TestConditionalOrderGenerator();
         mirror = new MirrorConditionalOrder();
 
-        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
+        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, DigestKind.BZZ);
     }
 
     /**

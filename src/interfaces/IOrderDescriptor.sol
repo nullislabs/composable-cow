@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {DigestKind} from "./DigestKind.sol";
+
 /**
  * @title Order Descriptor - declarative handler metadata for discovery
  * @author mfw78 <mfw78@nxm.rs>
@@ -16,20 +18,21 @@ interface IOrderDescriptor {
      * @dev MUST be emitted from the constructor of implementing contracts so
      *      indexers discover the descriptor without polling.
      */
-    event DescriptorUpdate(string[] uris, bytes32 digest);
+    event DescriptorUpdate(string[] uris, bytes32 digest, DigestKind kind);
 
     /**
      * @notice Locations of the handler descriptor document.
-     * @dev All URIs MUST reference the same document bytes (redundant
-     *      mirrors), never alternative content.
+     * @dev Empty for content-addressed kinds, which the commitment locates.
+     *      Non-empty for `SHA256`. Any URI listed is a retrieval hint and MUST
+     *      resolve to the same document bytes, never alternative content.
      */
     function descriptorURI() external view returns (string[] memory uris);
 
     /**
-     * @notice keccak256 of the exact descriptor document bytes as published.
-     * @dev Consumers MUST verify fetched bytes against this digest before
-     *      parsing when the URI is not content-addressed. bytes32(0) means
-     *      uncommitted; consumers MUST treat such descriptors as untrusted.
+     * @notice Commitment to the descriptor document.
+     * @dev `digest` is the document root in `kind`'s addressing. Consumers
+     *      MUST verify fetched bytes against it before parsing. `bytes32(0)`
+     *      means uncommitted; treat such descriptors as absent.
      */
-    function descriptorDigest() external view returns (bytes32);
+    function descriptorCommitment() external view returns (bytes32 digest, DigestKind kind);
 }

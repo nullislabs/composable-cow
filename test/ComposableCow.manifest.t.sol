@@ -18,6 +18,7 @@ import {OrderNotInitialized} from "../src/types/twap/TWAP.sol";
 import {PerpetualStableSwap, NotFunded} from "../src/types/PerpetualStableSwap.sol";
 import {CurrentBlockTimestampFactory} from "../src/value_factories/CurrentBlockTimestampFactory.sol";
 import {IValueFactory} from "../src/interfaces/IValueFactory.sol";
+import {DigestKind} from "../src/interfaces/DigestKind.sol";
 
 /**
  * @dev Test reason errors, as a handler would declare them
@@ -41,7 +42,7 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        perpetualSwap = new PerpetualStableSwap(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST);
+        perpetualSwap = new PerpetualStableSwap(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, DigestKind.BZZ);
         currentBlockTimestampFactory = new CurrentBlockTimestampFactory();
     }
 

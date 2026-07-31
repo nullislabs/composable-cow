@@ -11,6 +11,7 @@ import {
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 import {OrderDescriptor} from "../OrderDescriptor.sol";
+import {DigestKind} from "../interfaces/DigestKind.sol";
 
 // --- error strings
 
@@ -42,8 +43,8 @@ error OrderExpired();
  * @dev This order type has replay protection due to the `validTo` parameter, ensuring it will just execute one time
  */
 contract StopLoss is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_)
-        OrderDescriptor(descriptorUris, descriptorDigest_)
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, DigestKind descriptorKind)
+        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
     {}
 
     /**

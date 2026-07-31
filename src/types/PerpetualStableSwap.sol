@@ -11,6 +11,7 @@ import {
 import {IOrderManifest} from "../interfaces/IOrderManifest.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 import {OrderDescriptor} from "../OrderDescriptor.sol";
+import {DigestKind} from "../interfaces/DigestKind.sol";
 
 // --- error strings
 /**
@@ -23,8 +24,8 @@ error NotFunded();
  * taking decimals into account (and adding specifiable spread)
  */
 contract PerpetualStableSwap is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_)
-        OrderDescriptor(descriptorUris, descriptorDigest_)
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, DigestKind descriptorKind)
+        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
     {}
 
     /**

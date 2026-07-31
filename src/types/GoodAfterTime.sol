@@ -13,6 +13,7 @@ import {
 } from "../BaseConditionalOrder.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 import {OrderDescriptor} from "../OrderDescriptor.sol";
+import {DigestKind} from "../interfaces/DigestKind.sol";
 
 // --- error strings
 /**
@@ -45,8 +46,8 @@ error PriceCheckerFailed();
  *      checked before the order is placed.
  */
 contract GoodAfterTime is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_)
-        OrderDescriptor(descriptorUris, descriptorDigest_)
+    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, DigestKind descriptorKind)
+        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
     {}
 
     using SafeCast for uint256;

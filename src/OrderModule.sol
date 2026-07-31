@@ -2,32 +2,42 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IOrderModule} from "./interfaces/IOrderModule.sol";
+import {DigestKind} from "./interfaces/DigestKind.sol";
 import {BaseConditionalOrder} from "./BaseConditionalOrder.sol";
 
 /**
  * @title Order Module mixin - opt-in module commitment for handlers
  * @author mfw78 <mfw78@nxm.rs>
- * @dev Immutable by omission, as for `OrderDescriptor`. A zero digest is
- *      non-conformant (the digest is the module's canonical identity), so
- *      construction with any URIs requires a non-zero digest; constructed
- *      with no URIs the handler does not advertise `IOrderModule`.
+ * @dev Immutable by omission, as for `OrderDescriptor`. The commitment is what
+ *      advertises `IOrderModule`, not the URI list: a content-addressed
+ *      commitment locates its own package and so publishes no URI. Constructed
+ *      with a zero digest, the handler does not advertise the interface.
  */
 abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
     /**
-     * @dev A module commitment requires a non-zero digest
+     * @dev URIs cannot be published without a commitment to verify them against
      */
-    error InvalidModuleDigest();
+    error UncommittedModuleURI();
+
+    /**
+     * @dev `SHA256` does not locate the package, so it requires a URI
+     */
+    error ModuleURIRequired();
 
     string[] private _moduleUris;
     bytes32 private immutable _MODULE_DIGEST;
+    DigestKind private immutable _MODULE_KIND;
 
-    constructor(string[] memory uris, bytes32 digest) {
-        if (uris.length > 0) {
-            require(digest != bytes32(0), InvalidModuleDigest());
-            emit ModuleUpdate(uris, digest);
+    constructor(string[] memory uris, bytes32 digest, DigestKind kind) {
+        if (digest != bytes32(0)) {
+            require(kind != DigestKind.SHA256 || uris.length > 0, ModuleURIRequired());
+            emit ModuleUpdate(uris, digest, kind);
+        } else {
+            require(uris.length == 0, UncommittedModuleURI());
         }
         _moduleUris = uris;
         _MODULE_DIGEST = digest;
+        _MODULE_KIND = kind;
     }
 
     /**
@@ -40,8 +50,8 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
     /**
      * @inheritdoc IOrderModule
      */
-    function moduleDigest() external view returns (bytes32) {
-        return _MODULE_DIGEST;
+    function moduleCommitment() external view returns (bytes32 digest, DigestKind kind) {
+        return (_MODULE_DIGEST, _MODULE_KIND);
     }
 
     /**
@@ -49,7 +59,7 @@ abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         if (interfaceId == type(IOrderModule).interfaceId) {
-            return _moduleUris.length > 0;
+            return _MODULE_DIGEST != bytes32(0);
         }
         return super.supportsInterface(interfaceId);
     }
