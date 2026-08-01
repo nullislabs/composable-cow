@@ -9,10 +9,8 @@ surfaces:
 1. **Handler descriptors** (`IOrderDescriptor`) — declarative metadata for
    decoding and rendering a handler's orders.
 2. **Order modules** (`IOrderModule`) — executable extensions that let an
-   off-chain monitoring service (the polling agent historically called a
-   watch-tower; "monitoring service" hereafter) service handlers whose orders
-   require constructed `offchainInput`, including handler-specific off-chain
-   data.
+   off-chain monitoring service support handlers whose orders require
+   constructed `offchainInput`, including handler-specific off-chain data.
 3. **Proof payload URIs** — merkle-root payload locations expressed in the
    same URI format as every other discovery surface, plus the payload document
    that lets a consumer enumerate every published sub-order of a root.

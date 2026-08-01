@@ -549,7 +549,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         uint256 endTime = bundle.t0 + (bundle.n * bundle.t);
 
         while (true) {
-            // Simulate being called by the watch tower
+            // Simulate being called by a monitoring service
 
             (ComposableCow.PollResult memory simRes, bytes memory signature) =
                 composableCow.getTradeableOrderWithSignature(address(safe1), params, bytes(""), new bytes32[](0));
