@@ -385,10 +385,20 @@ The `validFrom` field is needed because `GPv2Order.Data` only contains `validTo`
 
 ### Pagination Contract
 
-`getManifestPage` returns `(entries, hasMore, reasonCode)` and guarantees that an empty page with `hasMore == true` is unreachable: a consumer advancing `offset += entries.length` and stopping at `hasMore == false` always terminates.
+`getManifestPage` returns `(entries, hasMore, status)` and guarantees that an empty page with `hasMore == true` is unreachable: a consumer advancing `offset += entries.length` and stopping at `hasMore == false` always terminates.
 
 - UNBOUNDED handlers expose only index 0 (the current discrete order) and return `hasMore == false` on every branch; `offset > 0` yields an empty final page.
-- When a page is empty because the order cannot currently be generated, `reasonCode` carries the decoded reason selector (mirroring `poll` semantics), so a not-yet-active order (`BeforeTwapStart.selector`) is distinguishable from a permanently invalid one. `reasonCode` is `bytes4(0)` on ordinary pages.
+- When a page is empty because the order cannot currently be generated, `status` carries the verdict `poll` would return for the same conditions, so a not-yet-active order is distinguishable from a permanently invalid one:
+
+```solidity
+struct ManifestStatus {
+    GeneratorResultCode code;  // the same verdict `poll` would return
+    uint256 waitUntil;         // block or timestamp to retry at
+    bytes4 reasonCode;         // the handler-declared selector
+}
+```
+
+- An ordinary page reports `POST` with zero `waitUntil` and `reasonCode`, including a page that is empty only because `offset` is past the end. Both return no entries, and only `code` separates "nothing here" from "nothing yet".
 
 ### Manifest Implementation by Order Type
 
@@ -404,7 +414,7 @@ The `validFrom` field is needed because `GPv2Order.Data` only contains `validTo`
 
 `BaseConditionalOrder` provides a default manifest implementation for single-shot orders:
 - `getManifestInfo()` returns `EXACT` with `totalOrders: 1`.
-- `getManifestPage()` wraps `generateOrder()` for a single entry, surfacing the decoded reason selector when generation is not currently possible.
+- `getManifestPage()` wraps `generateOrder()` for a single entry, surfacing the `poll` verdict in `status` when generation is not currently possible.
 
 ## ComposableCow Contract
 
@@ -615,8 +625,10 @@ interface IOrderManifest {
     struct ManifestInfo { Cardinality cardinality; uint256 totalOrders; }
     struct ManifestEntry { uint256 index; GPv2Order.Data order; uint256 validFrom; bool isActive; }
 
+    struct ManifestStatus { GeneratorResultCode code; uint256 waitUntil; bytes4 reasonCode; }
+
     function getManifestInfo(...) external view returns (ManifestInfo memory);
-    function getManifestPage(...) external view returns (ManifestEntry[] memory, bool hasMore, string memory status);
+    function getManifestPage(...) external view returns (ManifestEntry[] memory, bool hasMore, ManifestStatus memory status);
 }
 ```
 
