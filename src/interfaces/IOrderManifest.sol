@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
+import {IConditionalOrderGenerator} from "./IConditionalOrder.sol";
 
 /**
  * @title IOrderManifest - Interface for order enumeration
@@ -47,6 +48,25 @@ interface IOrderManifest {
     }
 
     /**
+     * @notice Why a page is what it is.
+     * @dev Mirrors `poll` rather than restating it: `code` is the same verdict
+     *      `poll` would return, so an empty page caused by a not-yet-active
+     *      order is distinguishable from a permanently invalid one without
+     *      knowing a handler's error names.
+     * @param code the generation verdict. `POST` on an ordinary page, including
+     *        one that is empty only because `offset` is past the end
+     * @param waitUntil timestamp (`WAIT_TIMESTAMP`) or block (`WAIT_BLOCK`);
+     *        `0` otherwise
+     * @param reasonCode the handler-declared error selector behind a non-`POST`
+     *        verdict; `bytes4(0)` for `POST`
+     */
+    struct ManifestStatus {
+        IConditionalOrderGenerator.GeneratorResultCode code;
+        uint256 waitUntil;
+        bytes4 reasonCode;
+    }
+
+    /**
      * @notice Get high-level information about the order manifest
      * @param owner The owner of the conditional order
      * @param ctx Context key (bytes32(0) for merkle, hash(params) for single)
@@ -78,9 +98,8 @@ interface IOrderManifest {
      * @param limit Maximum number of entries to return
      * @return entries Array of manifest entries
      * @return hasMore Whether more entries exist beyond this page
-     * @return reasonCode `bytes4(0)` on ordinary pages; the decoded generation
-     *         reason selector when an empty page is caused by the order not being
-     *         generatable
+     * @return status why the page is what it is; carries the generation verdict
+     *         so an empty page is classifiable without handler-specific knowledge
      */
     function getManifestPage(
         address owner,
@@ -89,5 +108,5 @@ interface IOrderManifest {
         bytes calldata offchainInput,
         uint256 offset,
         uint256 limit
-    ) external view returns (ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode);
+    ) external view returns (ManifestEntry[] memory entries, bool hasMore, ManifestStatus memory status);
 }

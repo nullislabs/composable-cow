@@ -154,10 +154,31 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
     }
 
     /**
+     * @dev An ordinary page: nothing was withheld.
+     */
+    function _manifestOk() internal pure returns (IOrderManifest.ManifestStatus memory) {
+        return IOrderManifest.ManifestStatus({
+            code: IConditionalOrderGenerator.GeneratorResultCode.POST, waitUntil: 0, reasonCode: bytes4(0)
+        });
+    }
+
+    /**
+     * @dev The verdict behind an empty page, decoded from generation revert data
+     *      through the same path `poll` uses so the two cannot disagree.
+     */
+    function _manifestStatus(bytes memory errorData) internal pure returns (IOrderManifest.ManifestStatus memory) {
+        IConditionalOrderGenerator.GeneratorResult memory verdict = _decodeErrorToGeneratorResult(errorData);
+        return IOrderManifest.ManifestStatus({
+            code: verdict.code, waitUntil: verdict.waitUntil, reasonCode: verdict.reasonCode
+        });
+    }
+
+    /**
      * @inheritdoc IOrderManifest
      * @dev Default: wraps `generateOrder` for a single entry at index 0. When the
-     *      order cannot currently be generated, the page is empty and `reasonCode`
-     *      carries the decoded reason selector, mirroring `poll` semantics.
+     *      order cannot currently be generated, the page is empty and `status`
+     *      carries the same verdict `poll` would return, so a not-yet-active
+     *      order is distinguishable from a permanently invalid one.
      */
     function getManifestPage(
         address owner,
@@ -166,10 +187,16 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
         bytes calldata offchainInput,
         uint256 offset,
         uint256 limit
-    ) external view virtual override returns (ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) {
+    )
+        external
+        view
+        virtual
+        override
+        returns (ManifestEntry[] memory entries, bool hasMore, ManifestStatus memory status)
+    {
         // Single-shot: only index 0 exists
         if (offset > 0 || limit == 0) {
-            return (new ManifestEntry[](0), false, bytes4(0));
+            return (new ManifestEntry[](0), false, _manifestOk());
         }
 
         try this.generateOrder(owner, address(0), ctx, staticInput, offchainInput) returns (
@@ -182,11 +209,11 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
                 validFrom: 0, // Single-shot orders are valid immediately (no explicit validFrom)
                 isActive: block.timestamp <= order.validTo
             });
-            return (entries, false, bytes4(0));
+            return (entries, false, _manifestOk());
         } catch (bytes memory errorData) {
             // Surface why the order is not generatable so a not-yet-active order
             // is distinguishable from a permanently invalid one
-            return (new ManifestEntry[](0), false, _decodeErrorToGeneratorResult(errorData).reasonCode);
+            return (new ManifestEntry[](0), false, _manifestStatus(errorData));
         }
     }
 
