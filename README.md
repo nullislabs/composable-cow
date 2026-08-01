@@ -4,12 +4,7 @@
 >
 > **This fork is unaudited and is not deployed.**
 >
-> It has diverged substantially from upstream
-> [`cowprotocol/composable-cow`](https://github.com/cowprotocol/composable-cow):
-> the order generation entry point, error signalling, polling interface, proof
-> payload location and handler discovery surface have all changed, and several
-> of those changes are breaking. The audits below cover the upstream contracts
-> as they stood before this work and do not carry over to this tree.
+> It has diverged substantially from upstream [`cowprotocol/composable-cow`](https://github.com/cowprotocol/composable-cow): the order generation entry point, error signalling, polling interface, proof payload location and handler discovery surface have all changed, and several of those changes are breaking. The audits below cover the upstream contracts as they stood before this work and do not carry over to this tree.
 >
 > Do not use in production. See [Divergence from upstream](#divergence-from-upstream).
 
@@ -17,49 +12,25 @@ This repository is the next in evolution of the [`conditional-smart-orders`](htt
 
 ## Divergence from upstream
 
-This fork is not a drop-in replacement for
-[`cowprotocol/composable-cow`](https://github.com/cowprotocol/composable-cow).
-The settlement path is shape-compatible; the changes concentrate on what an
-off-chain monitoring service can learn from the contracts, and on making that
-answer machine-readable rather than something to be parsed out of a revert.
+This fork is not a drop-in replacement for [`cowprotocol/composable-cow`](https://github.com/cowprotocol/composable-cow). The settlement path is shape-compatible; the changes concentrate on what an off-chain monitoring service can learn from the contracts, and on making that answer machine-readable rather than something to be parsed out of a revert.
 
-- **Order generation.** `getTradeableOrder` is now `generateOrder`, declared on
-  `IConditionalOrderGenerator`.
-- **Typed errors.** `string reason` is replaced by `bytes4` error selectors
-  throughout, so a consumer can classify a failure without reading prose.
-- **Structured polling.** Polling returns a verdict rather than reverting for
-  the caller to decode: a result code (`POST`, `WAIT_TIMESTAMP`, `WAIT_BLOCK`,
-  `TRY_NEXT_BLOCK`, `INVALID`, `NEEDS_INPUT`), the block or timestamp to retry
-  at, and the handler's reason selector. A missing `offchainInput` is reported
-  as `NEEDS_INPUT` rather than a timed retry, and a swap-guard restriction is
-  reported separately from the handler's own verdict.
-- **Fill state.** The registry composes `GPv2Settlement.filledAmount` into the
-  poll result, so a partially filled order reports its fill rather than
-  appearing tradeable at full size. The overlay is orthogonal to the verdict.
-- **Order manifest.** `IOrderManifest.getManifestPage` enumerates the discrete
-  orders a conditional order will produce, paginated, with a `ManifestStatus`
-  carrying the same verdict polling would return. An empty page therefore
-  distinguishes "not yet" from "never".
-- **Handler discovery.** `IOrderDescriptor` and `IOrderModule` describe a
-  handler and its off-chain extension, each committing to content by digest
-  (`PackageKind`: Swarm BMT manifest or sha256). Specified in
-  [`docs/discovery.md`](./docs/discovery.md).
-- **Proof payload locations.** `Proof` is now `{uris, blobVersionedHashes}`
-  rather than an opaque `{location, data}`. Blob hashes are verified attached
-  to the setting transaction, binding publication to authorisation.
-- **Handler validation.** Degenerate zero-amount orders are rejected at
-  validation rather than being emitted for settlement to refuse.
-- **Housekeeping.** Solidity 0.8.30 with a pinned toolchain,
-  require-with-custom-error style, build artifacts untracked, `ComposableCoW`
-  renamed to `ComposableCow`, and all deployment state cleared as nothing in
-  this tree is deployed.
+- **Order generation.** `getTradeableOrder` is now `generateOrder`, declared on `IConditionalOrderGenerator`.
+- **Typed errors.** `string reason` is replaced by `bytes4` error selectors throughout, so a consumer can classify a failure without reading prose.
+- **Structured polling.** Polling returns a verdict rather than reverting for the caller to decode: a result code (`POST`, `WAIT_TIMESTAMP`, `WAIT_BLOCK`, `TRY_NEXT_BLOCK`, `INVALID`, `NEEDS_INPUT`), the block or timestamp to retry at, and the handler's reason selector. A missing `offchainInput` is reported as `NEEDS_INPUT` rather than a timed retry, and a swap-guard restriction is reported separately from the handler's own verdict.
+- **Fill state.** The registry composes `GPv2Settlement.filledAmount` into the poll result, so a partially filled order reports its fill rather than appearing tradeable at full size. The overlay is orthogonal to the verdict.
+- **Order manifest.** `IOrderManifest.getManifestPage` enumerates the discrete orders a conditional order will produce, paginated, with a `ManifestStatus` carrying the same verdict polling would return. An empty page therefore distinguishes "not yet" from "never".
+- **Handler discovery.** `IOrderDescriptor` and `IOrderModule` describe a handler and its off-chain extension, each committing to content by digest (`PackageKind`: Swarm BMT manifest or sha256).
+- **Proof payload locations.** `Proof` is now `{uris, blobVersionedHashes}` rather than an opaque `{location, data}`. Blob hashes are verified attached to the setting transaction, binding publication to authorisation.
+- **Handler validation.** Degenerate zero-amount orders are rejected at validation rather than being emitted for settlement to refuse.
+- **Housekeeping.** Solidity 0.8.30 with a pinned toolchain, require-with-custom-error style, build artifacts untracked, `ComposableCoW` renamed to `ComposableCow`, and all deployment state cleared as nothing in this tree is deployed.
 
-Upstream has since added `ComposableCowPoller`, a registry for on-chain polling
-schedules and just-in-time order funding. That work is not present here.
+Upstream has since added `ComposableCowPoller`, a registry for on-chain polling schedules and just-in-time order funding. That work is not present here.
 
 ## Architecture
 
-A detailed explanation on the architecture is available [here](https://hackmd.io/@mfw78/ByFP7Iazn).
+- [`docs/architecture.md`](./docs/architecture.md) covers the dual-path design: the gas-sensitive settlement path and the gas-irrelevant polling path.
+- [`docs/discovery.md`](./docs/discovery.md) specifies the discovery surface, including commitments, handler descriptors, order modules and merkle payload documents.
+- [`docs/design/`](./docs/design) holds the design notes behind individual decisions.
 
 ### Methodology
 
@@ -121,7 +92,7 @@ A simple _time-weighted average price_ trade may be thought of as `n` smaller tr
 
 ### Data Structure
 
-```solidity=
+```solidity
 struct Data {
     IERC20 sellToken;
     IERC20 buyToken;
@@ -132,6 +103,7 @@ struct Data {
     uint256 n;
     uint256 t;
     uint256 span;
+    bytes32 appData;
 }
 ```
 
@@ -148,6 +120,7 @@ Example: Alice wants to sell 12,000,000 DAI for at least 7500 WETH. She wants to
 - `n` = 30 (number of parts)
 - `t` = 86400 (duration of each part, in seconds)
 - `span` = 0 (duration of `span`, in seconds, or `0` for entire interval)
+- `appData` = the CoW Protocol app data hash applied to every part
 
 If Alice also wanted to restrict the duration in which each part traded in each day, she may set `span` to a non-zero duration. For example, if Alice wanted to execute the TWAP, each day for 30 days, however only wanted to trade for the first 12 hours of each day, she would set `span` to `43200` (i.e. `60 * 60 * 12`).
 
@@ -166,10 +139,9 @@ To create a TWAP order:
 
 **NOTE**: When calling `ComposableCow.create`, setting `dispatch = true` will cause `ComposableCow` to emit event logs that are indexed by monitoring services automatically. If you wish to maintain a private order (and will submit to the CoW Protocol API through your own infrastructure, you may set `dispatch` to `false`).
 
-Fortunately, when using Safe, it is possible to batch together all the above calls to perform this step atomically, and optimise gas consumption / UX. For code examples on how to do this, please refer to the [CLI](#CLI).
+When using Safe, it is possible to batch together all the above calls to perform this step atomically, and optimise gas consumption / UX.
 
-**TODO**
-**NOTE:** For canceling a TWAP order, follow the instructions at [Conditional order cancellation](#Conditional-order-cancellation).
+**NOTE:** For cancelling a TWAP order, follow the instructions at [Conditional order cancellation](#conditional-order-cancellation).
 
 ## Developers
 
@@ -181,15 +153,13 @@ Fortunately, when using Safe, it is possible to batch together all the above cal
 
 None. This fork has no deployments on any network.
 
-The legacy `networks.json` recorded upstream's addresses, which belong to
-contracts this tree no longer matches, so it has been removed rather than left
-to be mistaken for the fork's own deployments. When this fork does deploy, the
-canonical machine-readable record is `deployments/networks.json`.
+The legacy `networks.json` recorded upstream's addresses, which belong to contracts this tree no longer matches, so it has been removed rather than left to be mistaken for the fork's own deployments. When this fork does deploy, the canonical machine-readable record is [`deployments/networks.json`](./deployments/networks.json).
+
+The `broadcast/` directory holds upstream's deployment records and verification inputs. They describe contracts this tree no longer matches and are retained only as history.
 
 ### Audits
 
-The following audits cover the **upstream** contracts before the changes in
-this fork. They do not cover the current tree:
+The following audits cover the **upstream** contracts before the changes in this fork. They do not cover the current tree:
 
 - Ackee Blockchain: [CoW Protocol - `ComposableCow` and `ExtensibleFallbackHandler`](./audits/ackee-blockchain-cow-protocol-composablecow-extensiblefallbackhandler-report-1.2.pdf)
 - Gnosis internal audit: [ComposableCow - May/July 2023](./audits/gnosis-ComposableCoWMayJul2023.pdf)
@@ -197,44 +167,30 @@ this fork. They do not cover the current tree:
 
 ### Environment setup
 
-Copy the `.env.example` to `.env` and set the applicable configuration variables for the testing / deployment environment.
+Copy `.env.example` to `.env`. The deployment and submission scripts read `PRIVATE_KEY` and `SETTLEMENT`, plus `SAFE`, `TWAP` and `COMPOSABLE_COW` for single order submission. Contract verification reads `ETHERSCAN_API_KEY`. The RPC endpoint is passed per command with `--rpc-url`.
 
 ### Testing
 
-Effort has been made to adhere as close as possible to [best practices](https://book.getfoundry.sh/guides/best-practices), with _unit_, _fuzzing_ and _fork_ tests being implemented.
-
-**NOTE:** Fuzz tests also include a `simulate` that runs full end-to-end integration testing, including the ability to settle conditional orders. Fork testing simulates end-to-end against production ethereum mainnet contracts, and as such requires `ETH_RPC_URL` to be defined (this should correspond to an archive node).
+Effort has been made to adhere as close as possible to [best practices](https://book.getfoundry.sh/guides/best-practices), with _unit_ and _fuzzing_ tests being implemented. The fuzz tests include `test_simulate_fuzz`, which runs end-to-end integration testing including settlement of conditional orders.
 
 ```bash
-forge test -vvv --no-match-test "fork|[fF]uzz" # Basic unit testing only
-forge test -vvv --no-match-test "fork" # Unit and fuzz testing
-forge test -vvv # Unit, fuzz, and fork testing
+forge test -vvv --no-match-test "[fF]uzz" # Unit tests only
+forge test -vvv                           # Unit and fuzz tests
 ```
+
+Fuzz tests are seeded in CI (`--fuzz-seed`) so that a run is reproducible.
 
 ### Coverage
 
 ```bash
-forge coverage -vvv --no-match-test "fork" --report summary
+forge coverage -vvv --report summary
 ```
-
-#### Deterministic deployment
-
-Because of the issue [#39](https://github.com/cowprotocol/composable-cow/issues/93), in order to achieve deterministic deployment it is needed to:
-
-- Go to a deployed contract in another network, open the creation TX (e.g. [ExtensibleFallbackHandler](https://etherscan.io/tx/0x33dcbc73a8797c69a5b3956539dd8d191cf3f190bcb27a4d4eca8556f030f574) in mainnet)
-- Go to `Click to show more` and copy the `Input Data` in Original format, also copy the `to` address
-- Use your favourite tool to make a transaction (e.g., [swiss-knife](https://transact.swiss-knife.xyz/send-tx?chainId=1))
-- Use the corresponding `Input Data` and `to` and send the tx
-- A new contract will be deployed using `CREATE2` to the same deterministic address
 
 ### Script-based deployment
 
-⚠ This approach won't deploy the contracts to the official addresses.
-It's mainly useful for testing or when introducing a new contract type.
+Deployment is handled by solidity scripts in `forge`. The network being deployed to is determined by the `--rpc-url` passed to each command.
 
-Deployment is handled by solidity scripts in `forge`. The network being deployed to is dependent on the `ETH_RPC_URL`.
-
-To deploy all contracts in a single run, run:
+To deploy all contracts in a single run:
 
 ```bash
 source .env
@@ -250,8 +206,9 @@ forge script script/deploy_ComposableCow.s.sol:DeployComposableCow --rpc-url $ET
 forge script script/deploy_OrderTypes.s.sol:DeployOrderTypes --rpc-url $ETH_RPC_URL --broadcast -vvvv --verify
 ```
 
-The `broadcast` directory collects the latest run of the deployment script by network and is updated manually.
-When the script is ran, the corresponding files can be found in the folder `broadcast/deploy_OrderTypes.s.sol/`.
+`script/` also carries `deploy_ExtensibleFallbackHandler.s.sol` and `deploy_ValueFactories.s.sol` for the supporting contracts.
+
+Each run writes its record under `broadcast/`, keyed by script and chain id.
 
 #### Contract verification on block explorer
 
