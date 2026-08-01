@@ -265,9 +265,17 @@ Descriptors are derived, not hand-written:
 
 - `staticInput.components` from the build artifact AST (the struct never
   crosses an external ABI boundary);
-- `errors` from the handler ABI (every reason error is a declared error);
-- a small author overlay supplies `name`, `description`, `display`, and
-  `links`;
+- `errors` from the build artifact AST as well, not the ABI: a reason error
+  declared at file scope is omitted from the contract ABI, and only the
+  framework wrappers (`OrderNotValid`, `PollTry*`) appear there. Reason errors
+  are those referenced as `X.selector` across the handler's transitive import
+  closure, which also captures errors raised inside libraries;
+- `offchainInput.required` from whether `generateOrder` reads its
+  `offchainInput` parameter, not from whether the handler declares
+  `PollNeedsOffchainInput`: a handler may consume the input without declaring
+  that error;
+- a small author overlay supplies `name`, `description`, `display`, `links`,
+  and optional error labels;
 - `handler` is stamped at deployment, making the digest per-deployment;
   deploy tooling canonicalizes, hashes, publishes, and passes
   `(uris, digest)` to the constructor.

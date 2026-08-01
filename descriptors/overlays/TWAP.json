@@ -1,0 +1,27 @@
+{
+  "description": "Sells a fixed amount in n equal parts at a fixed interval, optionally restricted to a span within each interval.",
+  "display": {
+    "summary": "TWAP: sell {{partSellAmount|amount(sellToken)}} x {{n}} every {{t|duration}}"
+  },
+  "labels": {
+    "AfterTwapFinish": "All parts complete",
+    "BeforeTwapStart": "Not started yet",
+    "InvalidFrequency": "Interval is invalid",
+    "InvalidHash": "Proposed order does not match the generated order",
+    "InvalidMinPartLimit": "Minimum part limit is zero",
+    "InvalidNumParts": "Number of parts is invalid",
+    "InvalidPartSellAmount": "Part sell amount is zero",
+    "InvalidSameToken": "Sell and buy token are the same",
+    "InvalidSpan": "Span exceeds the interval",
+    "InvalidStartTime": "Start time is invalid",
+    "InvalidToken": "Token address is zero",
+    "NotWithinSpan": "Outside today's trading window",
+    "OrderNotInitialized": "Waiting for the start time to be recorded"
+  },
+  "links": {
+    "source": "https://github.com/nullislabs/composable-cow/blob/develop/src/types/twap/TWAP.sol"
+  },
+  "name": "TWAP",
+  "source": "src/types/twap/TWAP.sol",
+  "staticInputStruct": "TWAPOrder.Data"
+}

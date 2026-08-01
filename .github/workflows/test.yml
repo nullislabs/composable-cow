@@ -42,6 +42,11 @@ jobs:
       - name: Build
         run: forge build
 
+      - name: Check descriptors are current
+        run: |
+          forge build --ast
+          dev/gen-descriptors.py --check
+
       - name: Test
         # `fork` needs an archive-node RPC and is not run here. The fuzz seed is
         # pinned so a failure is reproducible from the log alone.
