@@ -298,7 +298,7 @@ contract TestSwapGuard is BaseSwapGuard {
  * @dev A conditional order handler used for testing that returns the GPv2Order passed in as `offchainInput`
  */
 contract TestConditionalOrderGenerator is BaseConditionalOrder {
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata offchainInput)
         public
         pure
         override
@@ -322,7 +322,7 @@ contract MirrorConditionalOrder is IConditionalOrder {
     /**
      * @dev Not an interface member; this handler is a plain `IConditionalOrder`.
      */
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         external
         pure
         returns (GPv2Order.Data memory)
@@ -362,7 +362,7 @@ contract OrderNotValidHandler is BaseConditionalOrder {
         reasonCode = _reasonCode;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         view
         override
@@ -382,7 +382,7 @@ contract PollTryNextBlockHandler is BaseConditionalOrder {
         reasonCode = _reasonCode;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         view
         override
@@ -404,7 +404,7 @@ contract NeedsOffchainInputHandler is BaseConditionalOrder {
         reasonCode = _reasonCode;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata offchainInput)
         public
         view
         override
@@ -437,7 +437,7 @@ contract PollTryAtTimestampHandler is BaseConditionalOrder {
         reasonCode = _reasonCode;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         view
         override
@@ -459,7 +459,7 @@ contract PollTryAtBlockHandler is BaseConditionalOrder {
         reasonCode = _reasonCode;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         view
         override
@@ -479,7 +479,7 @@ contract SuccessHandler is BaseConditionalOrder {
         order = _order;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         view
         override
@@ -493,7 +493,7 @@ contract SuccessHandler is BaseConditionalOrder {
  * @dev Test handler whose generateOrder hits an arithmetic Panic (division by zero)
  */
 contract PanicHandler is BaseConditionalOrder {
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata offchainInput)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata offchainInput)
         public
         pure
         override
@@ -510,7 +510,7 @@ contract PanicHandler is BaseConditionalOrder {
  * @dev Test handler whose generateOrder fails a bare require (Error(string))
  */
 contract RequireFailHandler is BaseConditionalOrder {
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         pure
         override
@@ -527,7 +527,7 @@ contract RequireFailHandler is BaseConditionalOrder {
 contract UnknownErrorHandler is BaseConditionalOrder {
     error SomethingUnexpected(uint256 code);
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         pure
         override

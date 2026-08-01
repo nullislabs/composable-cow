@@ -79,7 +79,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.buyToken = token0;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidSameToken.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -91,13 +91,13 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.sellToken = IERC20(address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidToken.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
 
         o.sellToken = token0;
         o.buyToken = IERC20(address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidToken.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -111,7 +111,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidPartSellAmount.selector)
         );
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -123,7 +123,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.minPartLimit = 0;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidMinPartLimit.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -136,7 +136,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.t0 = startTime;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidStartTime.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -149,7 +149,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.n = numParts;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidNumParts.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -161,7 +161,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.t = frequency;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidFrequency.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -205,7 +205,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         o.span = span;
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidSpan.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -224,7 +224,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to current time
         vm.warp(currentTime);
@@ -234,7 +234,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
                 IConditionalOrderGenerator.PollTryAtTimestamp.selector, startTime, BeforeTwapStart.selector
             )
         );
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -254,13 +254,13 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to expiry
         vm.warp(currentTime);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, AfterTwapFinish.selector));
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     /**
@@ -282,7 +282,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         vm.warp(startTime);
 
         // Verify that the order is valid - this shouldn't revert
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
 
         // Warp to outside of the span
         vm.warp(currentTime);
@@ -297,7 +297,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         } else {
             vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, AfterTwapFinish.selector));
         }
-        twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
     }
 
     function test_generateOrder_FuzzRevertIfOrderBeforeBlockTimestamp(uint256 ctxBlockTimestamp, uint256 currentTime)
@@ -462,7 +462,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
         // Warp to the current time
         vm.warp(currentTime);
 
-        GPv2Order.Data memory order = twap.generateOrder(address(0), address(0), bytes32(0), abi.encode(o), bytes(""));
+        GPv2Order.Data memory order = twap.generateOrder(address(0), bytes32(0), abi.encode(o), bytes(""));
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // Verify that the order is valid - this shouldn't revert

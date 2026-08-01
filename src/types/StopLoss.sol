@@ -84,7 +84,7 @@ contract StopLoss is OrderDescriptor {
         uint256 maxTimeSinceLastOracleUpdate;
     }
 
-    function generateOrder(address, address, bytes32, bytes calldata staticInput, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata staticInput, bytes calldata)
         public
         view
         override

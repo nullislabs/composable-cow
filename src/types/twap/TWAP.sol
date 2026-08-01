@@ -52,9 +52,9 @@ contract TWAP is OrderDescriptor {
 
     /**
      * @inheritdoc IConditionalOrderGenerator
-     * @dev `owner`, `sender` and `offchainInput` is not used.
+     * @dev `owner` and `offchainInput` are not used.
      */
-    function generateOrder(address owner, address, bytes32 ctx, bytes calldata staticInput, bytes calldata)
+    function generateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata)
         public
         view
         override

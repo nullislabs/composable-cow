@@ -73,7 +73,7 @@ contract GoodAfterTime is OrderDescriptor {
         uint256 allowedSlippage; // in basis points
     }
 
-    function generateOrder(address owner, address, bytes32, bytes calldata staticInput, bytes calldata offchainInput)
+    function generateOrder(address owner, bytes32, bytes calldata staticInput, bytes calldata offchainInput)
         public
         view
         override

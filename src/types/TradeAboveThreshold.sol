@@ -35,7 +35,7 @@ contract TradeAboveThreshold is BaseConditionalOrder {
      * @dev If the `owner`'s balance of `sellToken` is above the specified threshold, sell its entire balance
      * for `buyToken` at the current market price (no limit!).
      */
-    function generateOrder(address owner, address, bytes32, bytes calldata staticInput, bytes calldata)
+    function generateOrder(address owner, bytes32, bytes calldata staticInput, bytes calldata)
         public
         view
         override
