@@ -216,11 +216,17 @@ of the integrity argument.
 
 ### 1.3 Document
 
-The descriptor document is JSON, validated against the published descriptor-v1
-JSON Schema (draft 2020-12, content-addressed `$id`; published separately).
+The descriptor document is JSON, validated against the descriptor-v1 JSON
+Schema (draft 2020-12), which lives at `descriptors/schema/descriptor-v1.json`.
 Producers MUST serialize with RFC 8785 (JSON Canonicalization Scheme); the
 digest commits to the exact published bytes, and consumers verify bytes before
 parsing.
+
+The schema's `$id` is a stable identifier, not a content address. A digest over
+the schema cannot be embedded in the schema it describes, for the same reason a
+descriptor cannot name its own handler address: the value would depend on bytes
+that depend on the value. Publishing the schema at a content-addressed location
+is fine, but the address is carried by whatever references it, never inside.
 
 ```json
 {

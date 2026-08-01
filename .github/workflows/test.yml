@@ -47,6 +47,12 @@ jobs:
           forge build --ast
           dev/gen-descriptors.py --check
 
+      - name: Validate descriptors against the schema
+        run: |
+          pipx install check-jsonschema
+          check-jsonschema --check-metaschema descriptors/schema/descriptor-v1.json
+          check-jsonschema --schemafile descriptors/schema/descriptor-v1.json descriptors/*.json
+
       - name: Test
         # `fork` needs an archive-node RPC and is not run here. The fuzz seed is
         # pinned so a failure is reproducible from the log alone.

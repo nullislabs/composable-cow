@@ -13,6 +13,7 @@ descriptor over observed behaviour has misread the spec.
 |------|------------|----------|
 | `overlays/<Handler>.json` | authors | `name`, `description`, `display`, `links`, error `labels`, and the pointers the generator needs (`source`, `staticInputStruct`) |
 | `<Handler>.json` | `dev/gen-descriptors.py` | the descriptor document, canonical bytes |
+| `schema/descriptor-v1.json` | authors | the descriptor-v1 JSON Schema (draft 2020-12) |
 
 The overlay is the only hand-written part. Everything a consumer relies on for
 decoding is derived from the compiler output, so it cannot drift from the
@@ -71,7 +72,18 @@ Two layers, neither requiring a JavaScript toolchain.
 ```sh
 dev/gen-descriptors.py --check    # committed bytes match what the pipeline emits
 forge test --match-contract DescriptorDoc
+nix-shell -p check-jsonschema --run \
+  "check-jsonschema --schemafile descriptors/schema/descriptor-v1.json descriptors/*.json"
 ```
+
+Any draft 2020-12 validator will do; CI uses `check-jsonschema` because it is a
+single pipx install and validates the schema against the metaschema too. The
+schema is the artefact a third-party consumer needs, since it is what lets them
+reject a malformed document without reimplementing the rules in prose.
+
+It also makes one design decision enforceable rather than merely documented: a
+document carrying `handler` is rejected outright, so the CREATE2 cycle described
+below cannot be reintroduced by accident.
 
 The `--check` mode catches hand-edits and staleness. The Solidity test checks the
 documents against the contracts they describe:
