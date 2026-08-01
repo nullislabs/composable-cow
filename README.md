@@ -167,7 +167,7 @@ The following audits cover the **upstream** contracts before the changes in this
 
 ### Environment setup
 
-Copy `.env.example` to `.env`. The deployment and submission scripts read `PRIVATE_KEY` and `SETTLEMENT`, plus `SAFE`, `TWAP` and `COMPOSABLE_COW` for single order submission. Contract verification reads `ETHERSCAN_API_KEY`. The RPC endpoint is passed per command with `--rpc-url`.
+Copy `.env.example` to `.env`. Every script reads `PRIVATE_KEY`; `SETTLEMENT` is needed to deploy `ComposableCow`, `COMPOSABLE_COW` to deploy order types against it, and `SAFE` plus `TWAP` to submit a single order. Contract verification reads `ETHERSCAN_API_KEY`. The RPC endpoint is passed per command with `--rpc-url`.
 
 ### Testing
 
