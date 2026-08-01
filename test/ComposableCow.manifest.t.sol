@@ -104,7 +104,7 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
         order.validTo = uint32(block.timestamp + 1 hours);
         handler.setOrder(order);
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             handler.getManifestPage(address(safe1), bytes32(0), bytes(""), bytes(""), 0, 10);
 
         assertEq(entries.length, 1);
@@ -112,7 +112,7 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
         assertEq(entries[0].order.sellAmount, 100e18);
         assertTrue(entries[0].isActive);
         assertFalse(hasMore);
-        assertEq(reasonCode, bytes4(0));
+        assertEq(status.reasonCode, bytes4(0));
     }
 
     /**
@@ -139,12 +139,17 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
         PollTryAtTimestampHandler handler =
             new PollTryAtTimestampHandler(block.timestamp + 1 days, TestNotYetActive.selector);
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             handler.getManifestPage(address(safe1), bytes32(0), bytes(""), bytes(""), 0, 10);
 
         assertEq(entries.length, 0);
         assertFalse(hasMore);
-        assertEq(reasonCode, TestNotYetActive.selector);
+        assertEq(status.reasonCode, TestNotYetActive.selector);
+        // The verdict, not the handler-declared selector, is what makes this
+        // classifiable: a consumer that has never heard of `TestNotYetActive`
+        // still knows the order is merely not active yet.
+        assertEq(uint256(status.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_TIMESTAMP));
+        assertEq(status.waitUntil, block.timestamp + 1 days);
     }
 
     /**
@@ -153,12 +158,14 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
     function test_manifestPage_EmptyPageCarriesInvalidReason() public {
         OrderNotValidHandler handler = new OrderNotValidHandler(TestPermanentlyInvalid.selector);
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             handler.getManifestPage(address(safe1), bytes32(0), bytes(""), bytes(""), 0, 10);
 
         assertEq(entries.length, 0);
         assertFalse(hasMore);
-        assertEq(reasonCode, TestPermanentlyInvalid.selector);
+        assertEq(status.reasonCode, TestPermanentlyInvalid.selector);
+        assertEq(uint256(status.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
+        assertEq(status.waitUntil, 0, "a terminal verdict carries no wait");
     }
 
     /**
@@ -195,12 +202,12 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
         uint256 startTime = block.timestamp;
         TWAPOrder.Data memory twapData = _twapTestBundle(startTime);
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             twap.getManifestPage(address(safe1), bytes32(0), abi.encode(twapData), bytes(""), 0, NUM_PARTS);
 
         assertEq(entries.length, NUM_PARTS);
         assertFalse(hasMore);
-        assertEq(reasonCode, bytes4(0));
+        assertEq(status.reasonCode, bytes4(0));
 
         for (uint256 i = 0; i < entries.length; i++) {
             assertEq(entries[i].index, i);
@@ -241,12 +248,12 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
         // t0 = 0 and no context set: the order is not initialized
         TWAPOrder.Data memory twapData = _twapTestBundle(0);
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             twap.getManifestPage(address(safe1), bytes32(0), abi.encode(twapData), bytes(""), 0, 10);
 
         assertEq(entries.length, 0);
         assertFalse(hasMore);
-        assertEq(reasonCode, OrderNotInitialized.selector);
+        assertEq(status.reasonCode, OrderNotInitialized.selector);
     }
 
     function test_TWAP_getManifestPage_WithContext() public {
@@ -332,12 +339,12 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
     function test_PSS_ManifestPage_NotFundedCarriesStatus() public {
         address unfundedOwner = makeAddr("unfunded");
 
-        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) =
+        (IOrderManifest.ManifestEntry[] memory entries, bool hasMore, IOrderManifest.ManifestStatus memory status) =
             perpetualSwap.getManifestPage(unfundedOwner, bytes32(0), abi.encode(_pssData()), bytes(""), 0, 10);
 
         assertEq(entries.length, 0);
         assertFalse(hasMore);
-        assertEq(reasonCode, NotFunded.selector);
+        assertEq(status.reasonCode, NotFunded.selector);
     }
 
     function test_PSS_ManifestPage_WithBalance() public {

@@ -163,10 +163,10 @@ contract PerpetualStableSwap is OrderDescriptor {
         bytes calldata offchainInput,
         uint256 offset,
         uint256 limit
-    ) external view override returns (ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) {
+    ) external view override returns (ManifestEntry[] memory entries, bool hasMore, ManifestStatus memory status) {
         // Only index 0 exists: out-of-range pages are empty and terminal
         if (offset > 0 || limit == 0) {
-            return (new ManifestEntry[](0), false, bytes4(0));
+            return (new ManifestEntry[](0), false, _manifestOk());
         }
 
         try this.generateOrder(owner, address(0), ctx, staticInput, offchainInput) returns (
@@ -179,10 +179,10 @@ contract PerpetualStableSwap is OrderDescriptor {
                 validFrom: 0, // Valid immediately
                 isActive: block.timestamp <= order.validTo
             });
-            return (entries, false, bytes4(0));
+            return (entries, false, _manifestOk());
         } catch (bytes memory errorData) {
             // e.g. not funded: empty page, terminated, with the decoded reason
-            return (new ManifestEntry[](0), false, _decodeErrorToGeneratorResult(errorData).reasonCode);
+            return (new ManifestEntry[](0), false, _manifestStatus(errorData));
         }
     }
 }

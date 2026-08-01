@@ -166,24 +166,32 @@ contract TWAP is OrderDescriptor {
         bytes calldata,
         uint256 offset,
         uint256 limit
-    ) external view override returns (ManifestEntry[] memory entries, bool hasMore, bytes4 reasonCode) {
+    ) external view override returns (ManifestEntry[] memory entries, bool hasMore, ManifestStatus memory status) {
         TWAPOrder.Data memory twap = _resolveTwapData(owner, ctx, staticInput);
 
         // If t0 is still 0 after resolution, the order has not been initialized
         // (context not yet written)
         if (twap.t0 == 0) {
-            return (new ManifestEntry[](0), false, OrderNotInitialized.selector);
+            return (
+                new ManifestEntry[](0),
+                false,
+                ManifestStatus({
+                    code: IConditionalOrderGenerator.GeneratorResultCode.TRY_NEXT_BLOCK,
+                    waitUntil: 0,
+                    reasonCode: OrderNotInitialized.selector
+                })
+            );
         }
 
         // Validate order parameters before any part math
         try this.validateTwapData(twap) {}
         catch (bytes memory errorData) {
-            return (new ManifestEntry[](0), false, _decodeErrorToGeneratorResult(errorData).reasonCode);
+            return (new ManifestEntry[](0), false, _manifestStatus(errorData));
         }
 
         uint256 totalParts = twap.n;
         if (offset >= totalParts || limit == 0) {
-            return (new ManifestEntry[](0), false, bytes4(0));
+            return (new ManifestEntry[](0), false, _manifestOk());
         }
 
         uint256 remaining = totalParts - offset;
