@@ -11,9 +11,51 @@
 > of those changes are breaking. The audits below cover the upstream contracts
 > as they stood before this work and do not carry over to this tree.
 >
-> Do not use in production.
+> Do not use in production. See [Divergence from upstream](#divergence-from-upstream).
 
 This repository is the next in evolution of the [`conditional-smart-orders`](https://github.com/cowprotocol/conditional-smart-orders), providing a unified interface for stateless, composable conditional orders. `ComposableCow` is designed to be used with the [`ExtensibleFallbackHandler`](https://github.com/rndlabs/safe-contracts/tree/merged-efh-sigmuxer), a powerful _extensible_ fallback handler that allows for significant customisation of a `Safe`, while preserving strong security guarantees.
+
+## Divergence from upstream
+
+This fork is not a drop-in replacement for
+[`cowprotocol/composable-cow`](https://github.com/cowprotocol/composable-cow).
+The settlement path is shape-compatible; the changes concentrate on what an
+off-chain monitoring service can learn from the contracts, and on making that
+answer machine-readable rather than something to be parsed out of a revert.
+
+- **Order generation.** `getTradeableOrder` is now `generateOrder`, declared on
+  `IConditionalOrderGenerator`.
+- **Typed errors.** `string reason` is replaced by `bytes4` error selectors
+  throughout, so a consumer can classify a failure without reading prose.
+- **Structured polling.** Polling returns a verdict rather than reverting for
+  the caller to decode: a result code (`POST`, `WAIT_TIMESTAMP`, `WAIT_BLOCK`,
+  `TRY_NEXT_BLOCK`, `INVALID`, `NEEDS_INPUT`), the block or timestamp to retry
+  at, and the handler's reason selector. A missing `offchainInput` is reported
+  as `NEEDS_INPUT` rather than a timed retry, and a swap-guard restriction is
+  reported separately from the handler's own verdict.
+- **Fill state.** The registry composes `GPv2Settlement.filledAmount` into the
+  poll result, so a partially filled order reports its fill rather than
+  appearing tradeable at full size. The overlay is orthogonal to the verdict.
+- **Order manifest.** `IOrderManifest.getManifestPage` enumerates the discrete
+  orders a conditional order will produce, paginated, with a `ManifestStatus`
+  carrying the same verdict polling would return. An empty page therefore
+  distinguishes "not yet" from "never".
+- **Handler discovery.** `IOrderDescriptor` and `IOrderModule` describe a
+  handler and its off-chain extension, each committing to content by digest
+  (`PackageKind`: Swarm BMT manifest or sha256). Specified in
+  [`docs/discovery.md`](./docs/discovery.md).
+- **Proof payload locations.** `Proof` is now `{uris, blobVersionedHashes}`
+  rather than an opaque `{location, data}`. Blob hashes are verified attached
+  to the setting transaction, binding publication to authorisation.
+- **Handler validation.** Degenerate zero-amount orders are rejected at
+  validation rather than being emitted for settlement to refuse.
+- **Housekeeping.** Solidity 0.8.30 with a pinned toolchain,
+  require-with-custom-error style, build artifacts untracked, `ComposableCoW`
+  renamed to `ComposableCow`, and all deployment state cleared as nothing in
+  this tree is deployed.
+
+Upstream has since added `ComposableCowPoller`, a registry for on-chain polling
+schedules and just-in-time order funding. That work is not present here.
 
 ## Architecture
 
@@ -42,9 +84,10 @@ A conditional order is a struct `ConditionalOrderParams`, consisting of:
 
 1. Collect all the conditional orders, which are multiple structs of `ConditionalOrderParams`.
 2. Populate a merkle tree with the leaves from (1), where each leaf is a double hashed of the ABI-encoded struct.
-3. Determine the merkle root of the tree and set this as the root, calling `ComposableCow.setRoot`. The `proof` must be set, and currently:
-   a. Set a `location` of `0` for no proofs emitted.
-   b. Otherwise, set a `location` of `1` at which case the payload in the proof will be interpreted as an array of proofs and indexed by monitoring services.
+3. Determine the merkle root of the tree and set this as the root, calling `ComposableCow.setRoot`. The `proof` declares where the payload document (the complete leaf set) is published. Both channels are optional and orthogonal:
+   a. `uris`: mirrors for the payload document, all referencing the same bytes. Never interpreted on-chain.
+   b. `blobVersionedHashes`: EIP-4844 blobs carrying the payload, each verified to be attached to the transaction setting the root.
+   c. Both empty: the root is private and no discovery is expected.
 
 #### Get Tradeable Order With Signature
 
@@ -55,9 +98,9 @@ Conditional orders may generate one or many discrete orders depending on their i
    - `params`: mentioned above.
    - `offchainInput` is any implementation specific offchain input for discrete order generation / validation.
    - `proof`: a zero length array if a single order, otherwise the merkle proof for the merkle root that's set for `owner`.
-2. Decoding the `GPv2Order`, use this data to populate a `POST` to the CoW Protocol API to create an order. Set the `signingScheme` to `eip1271` and the `signature` to that returned from the call in (1).
+2. The call returns a `PollResult` and a signature. When `result.generator.code` is `POST`, use `result.generator.order` to populate a `POST` to the CoW Protocol API to create an order. Set the `signingScheme` to `eip1271` and the `signature` to that returned from the call in (1). Any other verdict returns an empty signature.
 3. Review the order on [CoW Explorer](https://explorer.cow.fi/).
-4. `getTradeableOrderWithSignature(address,ConditionalOrderParams,bytes,bytes32[])` may revert with one of the custom errors. This provides feedback for monitoring services to modify their internal state.
+4. The call does not revert for order conditions. `result.generator` carries the verdict, the block or timestamp to retry at, and the handler's error selector; `result.fill` carries the observed fill state. This provides feedback for monitoring services to modify their internal state. It reverts only for authorisation and handler-interface failures.
 
 #### Conditional order cancellation
 
