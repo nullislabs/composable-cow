@@ -55,7 +55,7 @@ contract PerpetualStableSwap is OrderDescriptor {
     /**
      * @inheritdoc IConditionalOrderGenerator
      */
-    function generateOrder(address owner, address, bytes32, bytes calldata staticInput, bytes calldata)
+    function generateOrder(address owner, bytes32, bytes calldata staticInput, bytes calldata)
         public
         view
         override
@@ -169,9 +169,7 @@ contract PerpetualStableSwap is OrderDescriptor {
             return (new ManifestEntry[](0), false, _manifestOk());
         }
 
-        try this.generateOrder(owner, address(0), ctx, staticInput, offchainInput) returns (
-            GPv2Order.Data memory order
-        ) {
+        try this.generateOrder(owner, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory order) {
             entries = new ManifestEntry[](1);
             entries[0] = ManifestEntry({
                 index: 0, // Always 0 for unbounded (current order)

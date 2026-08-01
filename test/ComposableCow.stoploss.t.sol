@@ -80,7 +80,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, StrikeNotReached.selector)
         );
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_RevertStrikePriceNotMet_fuzz(
@@ -120,7 +120,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, StrikeNotReached.selector)
         );
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleNormalisesPrice_fuzz(
@@ -166,7 +166,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -201,7 +201,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -248,7 +248,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, OracleStalePrice.selector)
         );
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleRevertOnInvalidPrice_fuzz(int256 invalidPrice, int256 validPrice) public {
@@ -277,7 +277,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OracleInvalidPrice.selector));
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
 
         // case where buy token price is invalid
 
@@ -285,7 +285,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         data.buyTokenPriceOracle = mockOracle(BUY_ORACLE, invalidPrice, block.timestamp, DEFAULT_DECIMALS);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OracleInvalidPrice.selector));
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_OracleRevertOnExpiredOrder_fuzz(uint32 currentTime, uint32 validTo) public {
@@ -311,7 +311,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, OrderExpired.selector));
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 
     function test_strikePriceMet_fuzz(
@@ -345,7 +345,7 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
             maxTimeSinceLastOracleUpdate: 15 minutes
         });
 
-        GPv2Order.Data memory order = stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
         assertEq(address(order.sellToken), address(SELL_TOKEN));
         assertEq(address(order.buyToken), address(BUY_TOKEN));
         assertEq(order.sellAmount, 1 ether);
@@ -391,6 +391,6 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
         });
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ZeroAmount.selector));
-        stopLoss.generateOrder(safe, address(0), bytes32(0), abi.encode(data), bytes(""));
+        stopLoss.generateOrder(safe, bytes32(0), abi.encode(data), bytes(""));
     }
 }

@@ -288,7 +288,7 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
             vm.warp(entries[i].validFrom);
 
             GPv2Order.Data memory generatedOrder =
-                twap.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(twapData), bytes(""));
+                twap.generateOrder(address(safe1), bytes32(0), abi.encode(twapData), bytes(""));
 
             assertEq(address(entries[i].order.sellToken), address(generatedOrder.sellToken));
             assertEq(address(entries[i].order.buyToken), address(generatedOrder.buyToken));

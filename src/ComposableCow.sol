@@ -480,8 +480,8 @@ contract ComposableCow is ISafeSignatureVerifier {
             revert InterfaceNotSupported();
         }
 
-        result.generator = IConditionalOrderGenerator(address(params.handler))
-            .poll(owner, msg.sender, ctx, params.staticInput, offchainInput);
+        result.generator =
+            IConditionalOrderGenerator(address(params.handler)).poll(owner, ctx, params.staticInput, offchainInput);
 
         // The fill and restriction overlays are only meaningful for a postable order
         if (result.generator.code == IConditionalOrderGenerator.GeneratorResultCode.POST) {

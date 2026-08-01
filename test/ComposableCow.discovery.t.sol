@@ -21,7 +21,7 @@ error TestNoOrder();
 contract ModuleHandler is OrderModule {
     constructor(string[] memory uris, bytes32 digest, PackageKind kind) OrderModule(uris, digest, kind) {}
 
-    function generateOrder(address, address, bytes32, bytes calldata, bytes calldata)
+    function generateOrder(address, bytes32, bytes calldata, bytes calldata)
         public
         pure
         override
@@ -159,7 +159,7 @@ contract ComposableCowDiscoveryTest is BaseComposableCowTest {
         ModuleHandler handler = new ModuleHandler(new string[](0), keccak256("module"), PackageKind.BZZ_MANIFEST);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.NEEDS_INPUT));
         assertEq(result.reasonCode, TestNoOrder.selector);

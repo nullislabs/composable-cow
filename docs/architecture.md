@@ -20,7 +20,7 @@ This separation ensures settlement remains gas-efficient while providing rich me
 3. **Rich polling**: Structured results with scheduling hints for monitoring services.
 4. **Verdict and fill state are orthogonal**: handlers produce a *verdict* (`GeneratorResult`); observed fill state is composed by the registry, never by a handler.
 5. **No code duplication**: Polling wraps the same core logic used by settlement.
-6. **Handler purity**: handlers are pure functions of their explicit arguments (`owner`, `sender`, `ctx`, `staticInput`, `offchainInput`) and must not branch on `msg.sender`. Off-chain simulation soundness depends on this.
+6. **Handler purity**: the generated order is a pure function of `owner`, `ctx`, `staticInput`, `offchainInput` and block state. The generation surface takes no caller identity at all, and handlers must not branch on `msg.sender` (see [Caller Identity](#caller-identity)). Off-chain simulation soundness depends on this.
 
 ## Interface Hierarchy
 
@@ -145,6 +145,27 @@ signature emitted iff verdict == POST and the order is postable:
 - If the swap guard restricts the order, the registry reports it in the `PollResult.restriction` overlay (`SWAP_GUARD`) and no signature is emitted; the generator verdict is never overwritten - a guarded `POST` stays visible. Restriction is owner-reversible and its lifecycle is observable via `SwapGuardSet` (clear = `address(0)`).
 - **`INVALID` is uniformly terminal.** With restriction expressed as an overlay, the only producer of `INVALID` is the handler's own `OrderNotValid`; consumers never need a reason-selector branch for control flow.
 - `checkOrder()` returns the same composed `PollResult` through the same `_poll` helper (including the ERC-165 handler gate), without building the signature. The swap guard is not consulted by `checkOrder`; it is enforced at signature build time and during settlement.
+
+### Caller Identity
+
+Caller identity lives on the validation surface (`IConditionalOrder.verify`) and not on the generation surface (`IConditionalOrderGenerator`). The split is deliberate, and follows from how the two are reached.
+
+`generateOrder` is reached three ways, and `msg.sender` differs between them:
+
+| Path | Invocation | `msg.sender` in the handler |
+|------|------------|-----------------------------|
+| Settlement (`verify`) | internal call | the registry |
+| Polling (`poll`) | `this.generateOrder` | the handler itself |
+| Manifest (`getManifestPage`) | `this.generateOrder` | the handler itself |
+
+The external calls exist to obtain try/catch semantics, which is what makes a handler's revert decodable into a verdict rather than propagating. The divergence in `msg.sender` is a consequence of that, not a design intent.
+
+- **`msg.sender` must never be consulted.** A handler that branches on it derives one order under settlement and another under polling, so a monitoring service can propose an order that fails to settle, or settlement can execute an order no consumer previewed. This rule is not enforced on-chain.
+- **Caller identity cannot reach generation.** `generateOrder`, `poll` and `tryGenerateOrder` take no `sender`, so an order that varies with the settling party is not expressible. This is structural rather than conventional: there is no argument to misuse.
+
+`verify` keeps its `sender`. It has a single call path, so the value is unambiguous there, and gating on the settling party by reverting is a legitimate use. A validator-only handler, one implementing `IConditionalOrder` without being a generator, makes no polling promise and can gate freely. A generator makes that promise, and now cannot break it.
+
+The consequence is that settlement-time gating is not previewable by `poll` or `getManifestPage`, which is the accepted cost: a preview cannot know who will eventually settle.
 
 ## Error Types
 
@@ -335,7 +356,7 @@ One poll yields one discrete order, but a conditional order is not limited to on
 Worked example — a multi-currency DCA buying N tokens per window:
 
 ```solidity
-function generateOrder(address owner, address, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+function generateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
     public view returns (GPv2Order.Data memory)
 {
     Data memory data = abi.decode(staticInput, (Data)); // data.legs: token/amount pairs

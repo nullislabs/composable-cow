@@ -34,7 +34,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
      */
     function verify(
         address owner,
-        address sender,
+        address, // sender: gating on the settling party is a handler's own concern
         bytes32 _hash,
         bytes32 domainSeparator,
         bytes32 ctx,
@@ -42,7 +42,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
         bytes calldata offchainInput,
         GPv2Order.Data calldata
     ) external view override {
-        GPv2Order.Data memory generatedOrder = generateOrder(owner, sender, ctx, staticInput, offchainInput);
+        GPv2Order.Data memory generatedOrder = generateOrder(owner, ctx, staticInput, offchainInput);
 
         // Verify that the *generated* order is valid and matches the payload.
         require(
@@ -56,13 +56,13 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
      * @dev Wraps `generateOrder` in a try/catch, decoding conditional-order errors
      *      into a structured verdict.
      */
-    function poll(address owner, address sender, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+    function poll(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
         external
         view
         override
         returns (IConditionalOrderGenerator.GeneratorResult memory result)
     {
-        try this.generateOrder(owner, sender, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory order) {
+        try this.generateOrder(owner, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory order) {
             uint256 nextPoll = this.getNextPollTimestamp(owner, ctx, staticInput, order);
             return IConditionalOrderGenerator.GeneratorResult({
                 code: IConditionalOrderGenerator.GeneratorResultCode.POST,
@@ -82,14 +82,13 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
      *      consumer can inspect `Panic` sub-codes or unrecognized inner errors
      *      with their arguments, without any RPC revert-data handling.
      */
-    function tryGenerateOrder(
-        address owner,
-        address sender,
-        bytes32 ctx,
-        bytes calldata staticInput,
-        bytes calldata offchainInput
-    ) external view override returns (bool success, GPv2Order.Data memory order, bytes memory revertData) {
-        try this.generateOrder(owner, sender, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory o) {
+    function tryGenerateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+        external
+        view
+        override
+        returns (bool success, GPv2Order.Data memory order, bytes memory revertData)
+    {
+        try this.generateOrder(owner, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory o) {
             return (true, o, bytes(""));
         } catch (bytes memory errorData) {
             return (false, _emptyOrder(), errorData);
@@ -128,13 +127,12 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
      * @dev Set the visibility of this function to `public` to allow `verify` to call it.
      * @inheritdoc IConditionalOrderGenerator
      */
-    function generateOrder(
-        address owner,
-        address sender,
-        bytes32 ctx,
-        bytes calldata staticInput,
-        bytes calldata offchainInput
-    ) public view virtual override returns (GPv2Order.Data memory);
+    function generateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+        public
+        view
+        virtual
+        override
+        returns (GPv2Order.Data memory);
 
     // --- IOrderManifest defaults
 
@@ -199,9 +197,7 @@ abstract contract BaseConditionalOrder is IConditionalOrderGenerator, IOrderMani
             return (new ManifestEntry[](0), false, _manifestOk());
         }
 
-        try this.generateOrder(owner, address(0), ctx, staticInput, offchainInput) returns (
-            GPv2Order.Data memory order
-        ) {
+        try this.generateOrder(owner, ctx, staticInput, offchainInput) returns (GPv2Order.Data memory order) {
             entries = new ManifestEntry[](1);
             entries[0] = ManifestEntry({
                 index: 0,

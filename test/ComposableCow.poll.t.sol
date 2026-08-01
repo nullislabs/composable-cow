@@ -45,7 +45,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         OrderNotValidHandler handler = new OrderNotValidHandler(expectedReason);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
         assertEq(result.reasonCode, expectedReason);
@@ -62,7 +62,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(expectedReason);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.NEEDS_INPUT));
         assertEq(result.reasonCode, expectedReason);
@@ -78,7 +78,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(TestTriggerPriceRequired.selector);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes("trigger"));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes("trigger"));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
         assertEq(result.reasonCode, bytes4(0));
@@ -92,7 +92,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         NeedsOffchainInputHandler handler = new NeedsOffchainInputHandler(OffchainInputRequired.selector);
 
         (bool success,, bytes memory revertData) =
-            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.tryGenerateOrder(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertFalse(success);
         assertEq(
@@ -111,7 +111,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PollTryNextBlockHandler handler = new PollTryNextBlockHandler(expectedReason);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.TRY_NEXT_BLOCK));
         assertEq(result.reasonCode, expectedReason);
@@ -128,7 +128,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PollTryAtTimestampHandler handler = new PollTryAtTimestampHandler(expectedTimestamp, expectedReason);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_TIMESTAMP));
         assertEq(result.reasonCode, expectedReason);
@@ -145,7 +145,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PollTryAtBlockHandler handler = new PollTryAtBlockHandler(expectedBlock, expectedReason);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_BLOCK));
         assertEq(result.reasonCode, expectedReason);
@@ -176,7 +176,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         handler.setOrder(expectedOrder);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.POST));
         assertEq(result.reasonCode, bytes4(0));
@@ -194,7 +194,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PanicHandler handler = new PanicHandler();
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.TRY_NEXT_BLOCK));
         // Panic(uint256) selector; the 0x12 sub-code is retrievable via tryGenerateOrder
@@ -208,7 +208,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         RequireFailHandler handler = new RequireFailHandler();
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.TRY_NEXT_BLOCK));
         // Error(string) selector; the message is retrievable via tryGenerateOrder
@@ -222,7 +222,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         UnknownErrorHandler handler = new UnknownErrorHandler();
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.TRY_NEXT_BLOCK));
         // The unrecognized error's own selector is carried through
@@ -236,7 +236,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         OrderNotValidHandler handler = new OrderNotValidHandler(reasonCode);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.INVALID));
         assertEq(result.reasonCode, reasonCode);
@@ -249,7 +249,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PollTryAtTimestampHandler handler = new PollTryAtTimestampHandler(timestamp, reasonCode);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_TIMESTAMP));
         assertEq(result.waitUntil, timestamp);
@@ -263,7 +263,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PollTryAtBlockHandler handler = new PollTryAtBlockHandler(blockNum, reasonCode);
 
         IConditionalOrderGenerator.GeneratorResult memory result =
-            handler.poll(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.poll(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertEq(uint256(result.code), uint256(IConditionalOrderGenerator.GeneratorResultCode.WAIT_BLOCK));
         assertEq(result.waitUntil, blockNum);
@@ -342,7 +342,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         PanicHandler handler = new PanicHandler();
 
         (bool success,, bytes memory revertData) =
-            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.tryGenerateOrder(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertFalse(success);
         // Panic(0x12): division by zero
@@ -356,7 +356,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         RequireFailHandler handler = new RequireFailHandler();
 
         (bool success,, bytes memory revertData) =
-            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.tryGenerateOrder(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertFalse(success);
         assertEq(revertData, abi.encodeWithSignature("Error(string)", "plain require failure"));
@@ -369,7 +369,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         UnknownErrorHandler handler = new UnknownErrorHandler();
 
         (bool success,, bytes memory revertData) =
-            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.tryGenerateOrder(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertFalse(success);
         assertEq(revertData, abi.encodeWithSelector(UnknownErrorHandler.SomethingUnexpected.selector, uint256(42)));
@@ -385,7 +385,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
         handler.setOrder(expectedOrder);
 
         (bool success, GPv2Order.Data memory order, bytes memory revertData) =
-            handler.tryGenerateOrder(address(safe1), address(this), bytes32(0), bytes(""), bytes(""));
+            handler.tryGenerateOrder(address(safe1), bytes32(0), bytes(""), bytes(""));
 
         assertTrue(success);
         assertEq(order.sellAmount, 42e18);
@@ -498,7 +498,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
      */
     function test_fillOverlay_OrderUidMatchesGPv2Construction() public {
         (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler) = _successOrder(true);
-        GPv2Order.Data memory order = handler.generateOrder(address(0), address(0), bytes32(0), bytes(""), bytes(""));
+        GPv2Order.Data memory order = handler.generateOrder(address(0), bytes32(0), bytes(""), bytes(""));
 
         _mockFilledAmountFor(_expectedOrderUid(order, address(safe1)), 100e18);
 
@@ -515,7 +515,7 @@ contract ComposableCowPollTest is BaseComposableCowTest {
      */
     function test_fillOverlay_ForeignOwnerOrderUidNotObserved() public {
         (IConditionalOrder.ConditionalOrderParams memory params, SuccessHandler handler) = _successOrder(true);
-        GPv2Order.Data memory order = handler.generateOrder(address(0), address(0), bytes32(0), bytes(""), bytes(""));
+        GPv2Order.Data memory order = handler.generateOrder(address(0), bytes32(0), bytes(""), bytes(""));
 
         _mockFilledAmountFor(_expectedOrderUid(order, address(this)), 100e18);
 

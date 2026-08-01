@@ -38,7 +38,7 @@ contract ComposableCowTatTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, BalanceInsufficient.selector)
         );
-        tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), bytes(""));
+        tat.generateOrder(address(safe1), bytes32(0), abi.encode(o), bytes(""));
     }
 
     function test_BalanceMet_fuzz(address receiver, uint256 threshold, bytes32 appData, uint256 currentBalance) public {
@@ -61,8 +61,7 @@ contract ComposableCowTatTest is BaseComposableCowTest {
         deal(address(token0), address(safe1), currentBalance);
 
         // This should not revert
-        GPv2Order.Data memory order =
-            tat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(data), bytes(""));
+        GPv2Order.Data memory order = tat.generateOrder(address(safe1), bytes32(0), abi.encode(data), bytes(""));
 
         assertEq(address(order.sellToken), address(token0));
         assertEq(address(order.buyToken), address(token1));

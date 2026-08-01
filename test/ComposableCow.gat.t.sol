@@ -60,7 +60,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryAtTimestamp.selector, startTime, TooEarly.selector)
         );
-        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
+        gat.generateOrder(address(safe1), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
     /**
@@ -81,7 +81,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
 
         // should revert when the current balance is below the minimum balance
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, BalanceInsufficient.selector));
-        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
+        gat.generateOrder(address(safe1), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 
     /**
@@ -109,7 +109,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         vm.expectRevert(
             abi.encodeWithSelector(IConditionalOrderGenerator.PollTryNextBlock.selector, PriceCheckerFailed.selector)
         );
-        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+        gat.generateOrder(address(safe1), bytes32(0), abi.encode(o), abi.encode(buyAmount));
     }
 
     function test_generateOrder_FuzzContext(
@@ -148,8 +148,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         // This should not revert
-        GPv2Order.Data memory order =
-            gat.generateOrder(owner, address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+        GPv2Order.Data memory order = gat.generateOrder(owner, bytes32(0), abi.encode(o), abi.encode(buyAmount));
 
         GPv2Order.Data memory comparison = GPv2Order.Data({
             sellToken: token0,
@@ -295,7 +294,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         GPv2Order.Data memory order =
-            gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(buyAmount));
+            gat.generateOrder(address(safe1), bytes32(0), abi.encode(o), abi.encode(buyAmount));
         bytes32 domainSeparator = composableCow.domainSeparator();
 
         // Verify that the order is valid - this shouldn't revert
@@ -392,7 +391,7 @@ contract ComposableCowGatTest is BaseComposableCowTest {
         deal(address(o.sellToken), address(safe1), o.minSellBalance);
 
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, ZeroAmount.selector));
-        gat.generateOrder(address(safe1), address(0), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
+        gat.generateOrder(address(safe1), bytes32(0), abi.encode(o), abi.encode(uint256(1e18)));
     }
 }
 

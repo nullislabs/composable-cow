@@ -102,20 +102,24 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
      *      terms of it. **MUST** revert with one of the conditional-order errors
      *      above if the order condition is not met. A generator's `verify` **MUST**
      *      accept exactly the orders this function produces for the same arguments.
+     *
+     *      The generated order **MUST** be a pure function of `owner`, `ctx`,
+     *      `staticInput`, `offchainInput` and block state. Caller identity is
+     *      deliberately absent: implementations **MUST NOT** read `msg.sender`,
+     *      which is the registry when reached through `verify` and the handler
+     *      itself when reached through `poll` or `getManifestPage`. Gating on
+     *      the settling party belongs in `verify` (see `docs/architecture.md`,
+     *      Caller Identity).
      * @param owner the contract who is the owner of the order
-     * @param sender the `msg.sender` of the parent `isValidSignature` call
      * @param ctx the context of the order (bytes32(0) if merkle tree is used, otherwise the H(params))
      * @param staticInput the static input for all discrete orders cut from this conditional order
      * @param offchainInput dynamic off-chain input for a discrete order cut from this conditional order
      * @return the discrete order for submission to the CoW Protocol API
      */
-    function generateOrder(
-        address owner,
-        address sender,
-        bytes32 ctx,
-        bytes calldata staticInput,
-        bytes calldata offchainInput
-    ) external view returns (GPv2Order.Data memory);
+    function generateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+        external
+        view
+        returns (GPv2Order.Data memory);
 
     /**
      * @dev The handler's verdict on whether a discrete order can be posted.
@@ -159,13 +163,12 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
      *      conditional-order errors raised by `generateOrder` are decoded into the
      *      returned verdict instead.
      * @param owner the contract who is the owner of the order
-     * @param sender the `msg.sender` of the poll call
      * @param ctx the context of the order (bytes32(0) if merkle tree is used, otherwise the H(params))
      * @param staticInput the static input for all discrete orders cut from this conditional order
      * @param offchainInput dynamic off-chain input for a discrete order cut from this conditional order
      * @return result structured verdict with the order (if postable) and scheduling hints
      */
-    function poll(address owner, address sender, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+    function poll(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
         external
         view
         returns (GeneratorResult memory result);
@@ -182,13 +185,10 @@ interface IConditionalOrderGenerator is IConditionalOrder, IERC165 {
      * @return revertData the complete ABI-encoded revert data (empty when
      *         `success` is true)
      */
-    function tryGenerateOrder(
-        address owner,
-        address sender,
-        bytes32 ctx,
-        bytes calldata staticInput,
-        bytes calldata offchainInput
-    ) external view returns (bool success, GPv2Order.Data memory order, bytes memory revertData);
+    function tryGenerateOrder(address owner, bytes32 ctx, bytes calldata staticInput, bytes calldata offchainInput)
+        external
+        view
+        returns (bool success, GPv2Order.Data memory order, bytes memory revertData);
 
     /**
      * Get the scheduling hint for the next poll after a successful order.
