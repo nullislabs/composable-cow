@@ -14,8 +14,10 @@ Two facts come from the AST rather than the ABI:
     wrapper errors (OrderNotValid, PollTry*) reach the ABI, and those are not
     reason codes.
 
-`handler.{chainId,address}` is deliberately absent: it is stamped at deployment,
-which is what makes the digest per-deployment. See descriptors/README.md.
+The document carries no handler address or chain id. The digest is a constructor
+argument, so it is part of the initcode that fixes a CREATE2 address; a document
+naming its own address could not be committed to. Binding comes from resolution
+instead. See descriptors/README.md.
 
 Usage:
     dev/gen-descriptors.py            # write documents

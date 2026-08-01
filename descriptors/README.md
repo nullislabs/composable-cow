@@ -43,17 +43,26 @@ its `offchainInput` parameter, not from whether the handler declares
 `PollNeedsOffchainInput`. A handler can consume the input without declaring that
 error, and one here does.
 
-## These documents are not publishable as-is
+## These documents carry no handler identity
 
-`handler.{chainId,address}` is absent. It is stamped at deployment, which is what
-makes the digest per-deployment (§1.4). Deploy tooling stamps it, canonicalizes,
-hashes, publishes, and passes `(uris, digest)` to the constructor. Until then
-these are the deployment-independent portion, and a consumer that fetched one
-would correctly reject it: §1.3 requires `handler` to match the contract the
-descriptor was resolved from.
+Neither address nor chain, and that is not a gap waiting on a deployment.
 
-There are no deployments (see [`../deployments/`](../deployments)), so no
-descriptor in this repository has been published or committed to on-chain.
+The digest is a constructor argument to `OrderDescriptor`, so it is part of the
+initcode that fixes a CREATE2 address. A document naming its own handler address
+could never be committed to: the address would depend on a digest that depends on
+the address. Chain id is cycle-free but carries nothing, since every field here
+is chain-independent, and requiring it would force one publication per chain for
+byte-identical content.
+
+Binding comes from resolution instead. A consumer reads `descriptorCommitment()`
+from a specific contract and verifies the fetched bytes against that digest, so a
+document is that contract's descriptor exactly when it hashes to what the
+contract returns. An identity field would restate what the commitment proves.
+
+The upshot is that these documents are complete: one digest per handler version,
+publishable now, valid for every deployment on every chain. There are no
+deployments yet (see [`../deployments/`](../deployments)), so none has been
+published or committed to on-chain.
 
 ## Verification
 

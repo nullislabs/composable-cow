@@ -227,7 +227,6 @@ parsing.
   "version": "1",
   "name": "TWAP",
   "description": "Sells a fixed amount in n equal parts at a fixed interval.",
-  "handler": { "chainId": 100, "address": "0x…" },
   "staticInput": { "components": [ { "name": "sellToken", "type": "address" } ] },
   "offchainInput": { "required": false },
   "display": { "summary": "TWAP: sell {{partSellAmount|amount(sellToken)}} × {{n}} every {{t|duration}}" },
@@ -251,8 +250,21 @@ Field notes (normative semantics; full schema separate):
   display labels.
 - `display` templates are data (mustache-style with a small filter set),
   never code.
-- `handler.{chainId,address}` MUST match the contract the descriptor was
-  resolved from; a mismatch invalidates the document.
+- The document carries no handler identity, neither address nor chain. Binding
+  comes from resolution: a consumer reads `descriptorCommitment()` from a
+  specific contract and verifies the fetched bytes against that digest, so a
+  document is that contract's descriptor precisely when it hashes to what the
+  contract returns. An identity field inside the document would restate what
+  the commitment already proves.
+
+  Two consequences follow, both intended. Every field above is chain- and
+  deployment-independent, so byte-identical content yields one digest and one
+  publication serves every deployment of that handler on every chain. And the
+  digest is computable before the contract exists, which it must be: the
+  digest is a constructor argument, so under CREATE2 it is part of the initcode
+  that determines the address. A document naming its own handler address could
+  never be committed to, since the address would depend on a digest that
+  depends on the address.
 
 Consumers SHOULD run a divergence check before presenting descriptor-derived
 summaries: derive the actual order via `tryGenerateOrder`, compare material
@@ -276,9 +288,10 @@ Descriptors are derived, not hand-written:
   that error;
 - a small author overlay supplies `name`, `description`, `display`, `links`,
   and optional error labels;
-- `handler` is stamped at deployment, making the digest per-deployment;
-  deploy tooling canonicalizes, hashes, publishes, and passes
-  `(uris, digest)` to the constructor.
+- nothing is stamped at deployment; the document is a pure function of the
+  handler's source and its overlay. Tooling canonicalizes, hashes, publishes,
+  and passes `(uris, digest)` to the constructor, and may do so before
+  selecting a chain or computing an address.
 
 ## 2. Order modules
 
