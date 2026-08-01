@@ -36,7 +36,7 @@ A conditional order is a struct `ConditionalOrderParams`, consisting of:
 
 ##### Single Order
 
-1. From the context of the Safe that is placing the order, call `ComposableCow.create` with the `ConditionalOrderParams` struct. Optionally set `dispatch = true` to have events emitted that are picked up by a watch tower.
+1. From the context of the Safe that is placing the order, call `ComposableCow.create` with the `ConditionalOrderParams` struct. Optionally set `dispatch = true` to have events emitted that are picked up by an off-chain monitoring service.
 
 ##### Merkle Root
 
@@ -44,7 +44,7 @@ A conditional order is a struct `ConditionalOrderParams`, consisting of:
 2. Populate a merkle tree with the leaves from (1), where each leaf is a double hashed of the ABI-encoded struct.
 3. Determine the merkle root of the tree and set this as the root, calling `ComposableCow.setRoot`. The `proof` must be set, and currently:
    a. Set a `location` of `0` for no proofs emitted.
-   b. Otherwise, set a `location` of `1` at which case the payload in the proof will be interpreted as an array of proofs and indexed by the watch tower.
+   b. Otherwise, set a `location` of `1` at which case the payload in the proof will be interpreted as an array of proofs and indexed by monitoring services.
 
 #### Get Tradeable Order With Signature
 
@@ -57,7 +57,7 @@ Conditional orders may generate one or many discrete orders depending on their i
    - `proof`: a zero length array if a single order, otherwise the merkle proof for the merkle root that's set for `owner`.
 2. Decoding the `GPv2Order`, use this data to populate a `POST` to the CoW Protocol API to create an order. Set the `signingScheme` to `eip1271` and the `signature` to that returned from the call in (1).
 3. Review the order on [CoW Explorer](https://explorer.cow.fi/).
-4. `getTradeableOrderWithSignature(address,ConditionalOrderParams,bytes,bytes32[])` may revert with one of the custom errors. This provides feedback for watch towers to modify their internal state.
+4. `getTradeableOrderWithSignature(address,ConditionalOrderParams,bytes,bytes32[])` may revert with one of the custom errors. This provides feedback for monitoring services to modify their internal state.
 
 #### Conditional order cancellation
 
@@ -121,7 +121,7 @@ To create a TWAP order:
 2. Use the `struct` from (1) as either a Merkle leaf, or with `ComposableCow.create` to create a single conditional order.
 3. Approve `GPv2VaultRelayer` to trade `n x partSellAmount` of the safe's `sellToken` tokens (in the example above, `GPv2VaultRelayer` would receive approval for spending 12,000,000 DAI tokens).
 
-**NOTE**: When calling `ComposableCow.create`, setting `dispatch = true` will cause `ComposableCow` to emit event logs that are indexed by the watch tower automatically. If you wish to maintain a private order (and will submit to the CoW Protocol API through your own infrastructure, you may set `dispatch` to `false`).
+**NOTE**: When calling `ComposableCow.create`, setting `dispatch = true` will cause `ComposableCow` to emit event logs that are indexed by monitoring services automatically. If you wish to maintain a private order (and will submit to the CoW Protocol API through your own infrastructure, you may set `dispatch` to `false`).
 
 Fortunately, when using Safe, it is possible to batch together all the above calls to perform this step atomically, and optimise gas consumption / UX. For code examples on how to do this, please refer to the [CLI](#CLI).
 
@@ -224,7 +224,7 @@ If this doesn't work, check out [broadcast/StandardJsonInput/README.md](./broadc
 
 #### Local deployment
 
-For local integration testing, including the use of [Watch Tower](https://github.com/cowprotocol/tenderly-watch-tower), it may be useful deploying to a _forked_ mainnet environment. This can be done with `anvil`.
+For local integration testing, including running an off-chain monitoring service against the deployment, it may be useful deploying to a _forked_ mainnet environment. This can be done with `anvil`.
 
 1. Open a terminal and run `anvil`:
 
