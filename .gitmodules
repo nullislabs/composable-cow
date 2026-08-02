@@ -16,3 +16,6 @@
 	path = lib/safe
 	url = https://github.com/cowdao-grants/extensible-fallback-handler
 	branch = main
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/vectorized/solady
