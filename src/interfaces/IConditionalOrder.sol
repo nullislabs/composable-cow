@@ -2,7 +2,7 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
-import {IERC165} from "safe/interfaces/IERC165.sol";
+import {IERC165} from "../vendor/Safe.sol";
 
 /**
  * @dev Canonical reason for `PollNeedsOffchainInput`: the handler cannot

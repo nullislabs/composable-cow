@@ -57,3 +57,9 @@ jobs:
         # `fork` needs an archive-node RPC and is not run here. The fuzz seed is
         # pinned so a failure is reproducible from the log alone.
         run: forge test -vvv --no-match-test "fork" --fuzz-seed 672679878
+
+      # Deployed bytecode is built with via_ir, which the default profile cannot
+      # use while the Safe dependency is still linked into the tests and the
+      # Safe-side scripts. Building it here stops the two diverging unnoticed.
+      - name: Build deployment bytecode (via_ir)
+        run: FOUNDRY_PROFILE=prod forge build
