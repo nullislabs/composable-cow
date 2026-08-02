@@ -222,11 +222,10 @@ Producers MUST serialize with RFC 8785 (JSON Canonicalization Scheme); the
 digest commits to the exact published bytes, and consumers verify bytes before
 parsing.
 
-The schema's `$id` is a stable identifier, not a content address. A digest over
-the schema cannot be embedded in the schema it describes, for the same reason a
-descriptor cannot name its own handler address: the value would depend on bytes
-that depend on the value. Publishing the schema at a content-addressed location
-is fine, but the address is carried by whatever references it, never inside.
+The schema's `$id` is a stable identifier, not a content address: a digest over
+the schema cannot be embedded in the schema it describes. Publishing at a
+content-addressed location is fine; the address is carried by whatever
+references the schema, never inside it.
 
 ```json
 {
@@ -257,20 +256,13 @@ Field notes (normative semantics; full schema separate):
 - `display` templates are data (mustache-style with a small filter set),
   never code.
 - The document carries no handler identity, neither address nor chain. Binding
-  comes from resolution: a consumer reads `descriptorCommitment()` from a
-  specific contract and verifies the fetched bytes against that digest, so a
-  document is that contract's descriptor precisely when it hashes to what the
-  contract returns. An identity field inside the document would restate what
-  the commitment already proves.
+  comes from resolution: a document is a contract's descriptor when it hashes
+  to the digest that contract's `descriptorCommitment()` returns.
 
-  Two consequences follow, both intended. Every field above is chain- and
-  deployment-independent, so byte-identical content yields one digest and one
-  publication serves every deployment of that handler on every chain. And the
-  digest is computable before the contract exists, which it must be: the
-  digest is a constructor argument, so under CREATE2 it is part of the initcode
-  that determines the address. A document naming its own handler address could
-  never be committed to, since the address would depend on a digest that
-  depends on the address.
+  The digest is a constructor argument, so under CREATE2 it is part of the
+  initcode that determines the address; a document naming its own address would
+  depend on a digest that depends on the address. Every field above is
+  chain-independent, so one publication serves every deployment on every chain.
 
 Consumers SHOULD run a divergence check before presenting descriptor-derived
 summaries: derive the actual order via `tryGenerateOrder`, compare material

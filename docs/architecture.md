@@ -148,7 +148,7 @@ signature emitted iff verdict == POST and the order is postable:
 
 ### Caller Identity
 
-Caller identity lives on the validation surface (`IConditionalOrder.verify`) and not on the generation surface (`IConditionalOrderGenerator`). The split is deliberate, and follows from how the two are reached.
+Caller identity lives on the validation surface (`IConditionalOrder.verify`), not the generation surface (`IConditionalOrderGenerator`).
 
 `generateOrder` is reached three ways, and `msg.sender` differs between them:
 
@@ -158,14 +158,14 @@ Caller identity lives on the validation surface (`IConditionalOrder.verify`) and
 | Polling (`poll`) | `this.generateOrder` | the handler itself |
 | Manifest (`getManifestPage`) | `this.generateOrder` | the handler itself |
 
-The external calls exist to obtain try/catch semantics, which is what makes a handler's revert decodable into a verdict rather than propagating. The divergence in `msg.sender` is a consequence of that, not a design intent.
+The external calls exist for try/catch semantics, which is what makes a handler's revert decodable into a verdict. The `msg.sender` divergence is a consequence.
 
-- **`msg.sender` must never be consulted.** A handler that branches on it derives one order under settlement and another under polling, so a monitoring service can propose an order that fails to settle, or settlement can execute an order no consumer previewed. This rule is not enforced on-chain.
-- **Caller identity cannot reach generation.** `generateOrder`, `poll` and `tryGenerateOrder` take no `sender`, so an order that varies with the settling party is not expressible. This is structural rather than conventional: there is no argument to misuse.
+- **`msg.sender` must never be consulted.** A handler branching on it derives one order under settlement and another under polling, so a monitoring service can propose an order that fails to settle. Not enforced on-chain.
+- **Caller identity cannot reach generation.** `generateOrder`, `poll` and `tryGenerateOrder` take no `sender`, so an order that varies with the settling party is not expressible.
 
-`verify` keeps its `sender`. It has a single call path, so the value is unambiguous there, and gating on the settling party by reverting is a legitimate use. A validator-only handler, one implementing `IConditionalOrder` without being a generator, makes no polling promise and can gate freely. A generator makes that promise, and now cannot break it.
+`verify` keeps its `sender`: a single call path, and gating on the settling party by reverting is legitimate. A validator-only handler, implementing `IConditionalOrder` without being a generator, makes no polling promise and may gate freely.
 
-The consequence is that settlement-time gating is not previewable by `poll` or `getManifestPage`, which is the accepted cost: a preview cannot know who will eventually settle.
+Settlement-time gating is therefore not previewable by `poll` or `getManifestPage`.
 
 ## Error Types
 
