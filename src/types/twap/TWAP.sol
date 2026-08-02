@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../../libraries/Commitment.sol";
+import {BaseConditionalOrder} from "../../BaseConditionalOrder.sol";
+import {IOrderDescriptor} from "../../interfaces/IOrderDescriptor.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {ComposableCow} from "../../ComposableCow.sol";
@@ -36,17 +39,12 @@ error OrderNotInitialized();
  * specific price, even if the price of the token changes during the trade.
  * @dev Designed to be used with the CoW Protocol Conditional Order Framework.
  */
-contract TWAP is OrderDescriptor {
+contract TWAP is BaseConditionalOrder, OrderDescriptor {
     using SafeCast for uint256;
 
     ComposableCow public immutable composableCow;
 
-    constructor(
-        ComposableCow _composableCow,
-        string[] memory descriptorUris,
-        bytes32 descriptorDigest_,
-        PackageKind descriptorKind
-    ) OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind) {
+    constructor(ComposableCow _composableCow, Commitment.Data memory descriptor) OrderDescriptor(descriptor) {
         composableCow = _composableCow;
     }
 
@@ -300,5 +298,14 @@ contract TWAP is OrderDescriptor {
             validFrom: validFrom,
             isActive: block.timestamp >= validFrom && block.timestamp <= validTo
         });
+    }
+
+    /**
+     * @inheritdoc BaseConditionalOrder
+     * @dev Adds the descriptor sidecar, which is advertised only once committed.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        if (interfaceId == type(IOrderDescriptor).interfaceId) return _descriptorAdvertised();
+        return super.supportsInterface(interfaceId);
     }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../src/libraries/Commitment.sol";
 import {Script, console} from "forge-std/Script.sol";
 
 // CoW Protocol
@@ -62,9 +63,9 @@ contract DeployAnvilStack is Script {
 
         // deploy the Composable CoW
         ComposableCow composableCow = new ComposableCow(address(settlement));
-        new TWAP(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new GoodAfterTime(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new PerpetualStableSwap(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new TWAP(composableCow, Commitment.none());
+        new GoodAfterTime(Commitment.none());
+        new PerpetualStableSwap(Commitment.none());
         new TradeAboveThreshold();
 
         vm.stopBroadcast();

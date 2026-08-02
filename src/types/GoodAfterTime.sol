@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../libraries/Commitment.sol";
+import {BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {IOrderDescriptor} from "../interfaces/IOrderDescriptor.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IExpectedOutCalculator} from "../vendored/Milkman.sol";
@@ -45,10 +48,8 @@ error PriceCheckerFailed();
  *      ensure that the order is not filled multiple times, a `minSellBalance` is
  *      checked before the order is placed.
  */
-contract GoodAfterTime is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, PackageKind descriptorKind)
-        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
-    {}
+contract GoodAfterTime is BaseConditionalOrder, OrderDescriptor {
+    constructor(Commitment.Data memory descriptor) OrderDescriptor(descriptor) {}
 
     using SafeCast for uint256;
 
@@ -156,5 +157,14 @@ contract GoodAfterTime is OrderDescriptor {
         returns (string memory)
     {
         return "good-after-time order ready";
+    }
+
+    /**
+     * @inheritdoc BaseConditionalOrder
+     * @dev Adds the descriptor sidecar, which is advertised only once committed.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        if (interfaceId == type(IOrderDescriptor).interfaceId) return _descriptorAdvertised();
+        return super.supportsInterface(interfaceId);
     }
 }
