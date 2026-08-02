@@ -26,7 +26,7 @@ abstract contract ERC1271Forwarder is ERC1271 {
      * @param _hash GPv2Order.Data digest
      * @param signature The abi.encoded tuple of (GPv2Order.Data, ComposableCow.PayloadStruct)
      */
-    function isValidSignature(bytes32 _hash, bytes memory signature) public view override returns (bytes4) {
+    function isValidSignature(bytes32 _hash, bytes calldata signature) public view virtual override returns (bytes4) {
         (GPv2Order.Data memory order, ComposableCow.PayloadStruct memory payload) =
             abi.decode(signature, (GPv2Order.Data, ComposableCow.PayloadStruct));
         bytes32 domainSeparator = composableCow.domainSeparator();
