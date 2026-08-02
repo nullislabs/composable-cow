@@ -15,7 +15,9 @@ import {BaseConditionalOrder} from "./BaseConditionalOrder.sol";
  *      A handler constructed with no URIs does NOT advertise
  *      `IOrderDescriptor` - feature detection stays honest for deployments
  *      that predate their descriptor document; committing requires a
- *      redeployment (the descriptor digest is per-deployment anyway).
+ *      redeployment. The digest is a constructor argument and therefore
+ *      part of the initcode that fixes a CREATE2 address, so the document it
+ *      commits to carries no handler identity of its own.
  */
 abstract contract OrderDescriptor is IOrderDescriptor, BaseConditionalOrder {
     /**

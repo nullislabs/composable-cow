@@ -1,0 +1,20 @@
+{
+  "description": "Sells once a Chainlink-derived price crosses a strike, with staleness and expiry guards.",
+  "display": {
+    "summary": "Stop loss: sell {{sellAmount|amount(sellToken)}} when price crosses {{strike}}"
+  },
+  "labels": {
+    "InvalidHash": "Proposed order does not match the generated order",
+    "OracleInvalidPrice": "Oracle returned an invalid price",
+    "OracleStalePrice": "Oracle price is stale",
+    "OrderExpired": "Order validity window has passed",
+    "StrikeNotReached": "Price has not crossed the strike",
+    "ZeroAmount": "Sell or buy amount is zero"
+  },
+  "links": {
+    "source": "https://github.com/nullislabs/composable-cow/blob/develop/src/types/StopLoss.sol"
+  },
+  "name": "StopLoss",
+  "source": "src/types/StopLoss.sol",
+  "staticInputStruct": "StopLoss.Data"
+}

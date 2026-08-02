@@ -1,0 +1,19 @@
+{
+  "description": "Sells after a start time, sizing the buy amount from an off-chain price checker and the owner's balance.",
+  "display": {
+    "summary": "Good after time: sell {{sellAmount|amount(sellToken)}} from {{startTime|datetime}}"
+  },
+  "labels": {
+    "BalanceInsufficient": "Owner balance is below the sell amount",
+    "InvalidHash": "Proposed order does not match the generated order",
+    "PriceCheckerFailed": "Price checker rejected the order",
+    "TooEarly": "Not yet valid",
+    "ZeroAmount": "Sell or buy amount is zero"
+  },
+  "links": {
+    "source": "https://github.com/nullislabs/composable-cow/blob/develop/src/types/GoodAfterTime.sol"
+  },
+  "name": "GoodAfterTime",
+  "source": "src/types/GoodAfterTime.sol",
+  "staticInputStruct": "GoodAfterTime.Data"
+}

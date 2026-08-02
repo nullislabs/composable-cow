@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nullislabs.github.io/composable-cow/schemas/descriptor-v1.json",
+  "title": "Conditional order handler descriptor, version 1",
+  "description": "Presentation metadata for a conditional order handler. Hints, never authority: every economically material fact is derived from the chain. See docs/discovery.md section 1.",
+  "type": "object",
+  "required": [
+    "version",
+    "name",
+    "description",
+    "staticInput",
+    "offchainInput",
+    "display",
+    "errors",
+    "links",
+    "extensions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Handler name, matching the contract name."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "staticInput": {
+      "type": "object",
+      "required": ["components"],
+      "additionalProperties": false,
+      "properties": {
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "description": "JSON-ABI components fragment: the decoded shape of the handler's staticInput bytes.",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "type": {
+                "type": "string",
+                "description": "Canonical ABI type. Contract and enum types are reduced to address and uint8.",
+                "pattern": "^(address|bool|string|bytes|bytes([1-9]|[12][0-9]|3[0-2])|u?int(8|16|24|32|40|48|56|64|72|80|88|96|104|112|120|128|136|144|152|160|168|176|184|192|200|208|216|224|232|240|248|256))(\\[[0-9]*\\])?$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "offchainInput": {
+      "type": "object",
+      "required": ["required"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean",
+          "description": "True when generateOrder reads its offchainInput parameter. Module discovery is on-chain and independent of this field."
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "required": ["summary"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mustache-style template. Data, never code."
+        }
+      }
+    },
+    "errors": {
+      "type": "object",
+      "description": "Reason selectors, as carried in reasonCode, mapped to names and optional labels.",
+      "propertyNames": { "pattern": "^0x[0-9a-f]{8}$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "format": "uri" }
+    },
+    "extensions": {
+      "type": "object"
+    }
+  },
+  "not": {
+    "required": ["handler"],
+    "$comment": "The document carries no handler identity. The digest is a constructor argument and therefore part of the initcode that fixes a CREATE2 address, so a document naming its own address could not be committed to. Binding comes from resolution instead."
+  }
+}

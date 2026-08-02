@@ -1,0 +1,16 @@
+{
+  "description": "Sells the owner's entire balance of a token once it exceeds a threshold.",
+  "display": {
+    "summary": "Trade above threshold: sell all {{sellToken}} once balance exceeds {{threshold|amount(sellToken)}}"
+  },
+  "labels": {
+    "BalanceInsufficient": "Balance is at or below the threshold",
+    "InvalidHash": "Proposed order does not match the generated order"
+  },
+  "links": {
+    "source": "https://github.com/nullislabs/composable-cow/blob/develop/src/types/TradeAboveThreshold.sol"
+  },
+  "name": "TradeAboveThreshold",
+  "source": "src/types/TradeAboveThreshold.sol",
+  "staticInputStruct": "TradeAboveThreshold.Data"
+}

@@ -216,18 +216,22 @@ of the integrity argument.
 
 ### 1.3 Document
 
-The descriptor document is JSON, validated against the published descriptor-v1
-JSON Schema (draft 2020-12, content-addressed `$id`; published separately).
+The descriptor document is JSON, validated against the descriptor-v1 JSON
+Schema (draft 2020-12), which lives at `descriptors/schema/descriptor-v1.json`.
 Producers MUST serialize with RFC 8785 (JSON Canonicalization Scheme); the
 digest commits to the exact published bytes, and consumers verify bytes before
 parsing.
+
+The schema's `$id` is a stable identifier, not a content address: a digest over
+the schema cannot be embedded in the schema it describes. Publishing at a
+content-addressed location is fine; the address is carried by whatever
+references the schema, never inside it.
 
 ```json
 {
   "version": "1",
   "name": "TWAP",
   "description": "Sells a fixed amount in n equal parts at a fixed interval.",
-  "handler": { "chainId": 100, "address": "0x…" },
   "staticInput": { "components": [ { "name": "sellToken", "type": "address" } ] },
   "offchainInput": { "required": false },
   "display": { "summary": "TWAP: sell {{partSellAmount|amount(sellToken)}} × {{n}} every {{t|duration}}" },
@@ -249,10 +253,22 @@ Field notes (normative semantics; full schema separate):
   names and optional human labels. Names for open-source handlers are
   derivable from the verified ABI; this map serves closed-source handlers and
   display labels.
+
+  Reason errors MUST be nullary. A handler raises one by passing `X.selector`
+  to a framework wrapper whose payload is `bytes4`, so the error is a tag and
+  is never constructed; parameters would be dropped at the raise site and
+  could not be recovered from `poll`, `getManifestPage` or `tryGenerateOrder`.
+  Structured data travels in the wrapper instead, as `waitUntil` does.
 - `display` templates are data (mustache-style with a small filter set),
   never code.
-- `handler.{chainId,address}` MUST match the contract the descriptor was
-  resolved from; a mismatch invalidates the document.
+- The document carries no handler identity, neither address nor chain. Binding
+  comes from resolution: a document is a contract's descriptor when it hashes
+  to the digest that contract's `descriptorCommitment()` returns.
+
+  The digest is a constructor argument, so under CREATE2 it is part of the
+  initcode that determines the address; a document naming its own address would
+  depend on a digest that depends on the address. Every field above is
+  chain-independent, so one publication serves every deployment on every chain.
 
 Consumers SHOULD run a divergence check before presenting descriptor-derived
 summaries: derive the actual order via `tryGenerateOrder`, compare material
@@ -265,12 +281,21 @@ Descriptors are derived, not hand-written:
 
 - `staticInput.components` from the build artifact AST (the struct never
   crosses an external ABI boundary);
-- `errors` from the handler ABI (every reason error is a declared error);
-- a small author overlay supplies `name`, `description`, `display`, and
-  `links`;
-- `handler` is stamped at deployment, making the digest per-deployment;
-  deploy tooling canonicalizes, hashes, publishes, and passes
-  `(uris, digest)` to the constructor.
+- `errors` from the build artifact AST as well, not the ABI: a reason error
+  declared at file scope is omitted from the contract ABI, and only the
+  framework wrappers (`OrderNotValid`, `PollTry*`) appear there. Reason errors
+  are those referenced as `X.selector` across the handler's transitive import
+  closure, which also captures errors raised inside libraries;
+- `offchainInput.required` from whether `generateOrder` reads its
+  `offchainInput` parameter, not from whether the handler declares
+  `PollNeedsOffchainInput`: a handler may consume the input without declaring
+  that error;
+- a small author overlay supplies `name`, `description`, `display`, `links`,
+  and optional error labels;
+- nothing is stamped at deployment; the document is a pure function of the
+  handler's source and its overlay. Tooling canonicalizes, hashes, publishes,
+  and passes `(uris, digest)` to the constructor, and may do so before
+  selecting a chain or computing an address.
 
 ## 2. Order modules
 
