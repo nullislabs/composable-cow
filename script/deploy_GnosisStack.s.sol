@@ -4,6 +4,9 @@ pragma solidity >=0.8.0 <0.9.0;
 import "forge-std/Script.sol";
 
 import {ComposableCow} from "../src/ComposableCow.sol";
+import {EIP7702Proxy} from "solady/accounts/EIP7702Proxy.sol";
+
+import {CowAccount7702} from "../src/accounts/CowAccount7702.sol";
 import {OwnedGoodAfterTime, OwnedStopLoss, OwnedTWAP} from "../src/types/Owned.sol";
 
 /**
@@ -42,6 +45,12 @@ contract DeployGnosisStack is Script {
         OwnedStopLoss stopLoss = new OwnedStopLoss(admin);
         OwnedGoodAfterTime goodAfterTime = new OwnedGoodAfterTime(admin);
 
+        // Delegation target for an EOA testing without a Safe. The EOA authorises
+        // the proxy once; the implementation behind it can be replaced by `admin`
+        // afterwards without a second authorisation.
+        CowAccount7702 account = new CowAccount7702(composableCow);
+        EIP7702Proxy accountProxy = new EIP7702Proxy(address(account), admin);
+
         vm.stopBroadcast();
 
         console.log("chainId          ", block.chainid);
@@ -50,8 +59,11 @@ contract DeployGnosisStack is Script {
         console.log("OwnedTWAP         ", address(twap));
         console.log("OwnedStopLoss     ", address(stopLoss));
         console.log("OwnedGoodAfterTime", address(goodAfterTime));
+        console.log("CowAccount7702    ", address(account));
+        console.log("EIP7702Proxy      ", address(accountProxy));
         console.log("");
         console.log("Record these in deployments/networks.json, then publish each");
         console.log("descriptor and call setDescriptor from the owner.");
+        console.log("Delegate an EOA with: cast send --auth", address(accountProxy));
     }
 }

@@ -16,7 +16,7 @@ import {
 } from "./ComposableCow.base.t.sol";
 
 import {TWAPOrder} from "../src/types/twap/libraries/TWAPOrder.sol";
-import {ComposableCow7702} from "../src/ComposableCow7702.sol";
+import {CowAccount7702} from "../src/accounts/CowAccount7702.sol";
 
 /**
  * @dev EIP-7702 delegation cheatcodes are supported by the `forge` binary
@@ -59,7 +59,7 @@ contract ComposableCow7702Test is BaseComposableCowTest {
     /// @dev secp256k1 group order.
     uint256 internal constant SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
-    ComposableCow7702 internal impl;
+    CowAccount7702 internal impl;
     address internal eoa;
     uint256 internal eoaPk;
 
@@ -67,7 +67,7 @@ contract ComposableCow7702Test is BaseComposableCowTest {
         super.setUp();
 
         // deploy the shared delegate implementation
-        impl = new ComposableCow7702(composableCow);
+        impl = new CowAccount7702(composableCow);
 
         // create the delegating EOA and attach the EIP-7702 delegation
         // (real cheatcode: writes the 0xef0100 ++ impl designator)
@@ -129,12 +129,12 @@ contract ComposableCow7702Test is BaseComposableCowTest {
                 ORDER_TYPE
             )
         );
-        // ComposableCow7702's account domain: verifyingContract is the EOA
+        // CowAccount7702's account domain: verifyingContract is the EOA
         bytes32 structHash = keccak256(
             abi.encode(
                 typedDataSignTypehash,
                 contents,
-                keccak256("ComposableCow7702"),
+                keccak256("CowAccount7702"),
                 keccak256("1"),
                 block.chainid,
                 eoa,
@@ -360,7 +360,7 @@ contract ComposableCow7702Test is BaseComposableCowTest {
 
         // under EIP-7702, msg.sender == address(this) is a self-sent tx
         vm.prank(eoa);
-        ComposableCow7702(payable(eoa)).execute(MODE_SINGLE_BATCH, abi.encode(calls));
+        CowAccount7702(payable(eoa)).execute(MODE_SINGLE_BATCH, abi.encode(calls));
 
         assertTrue(composableCow.singleOrders(eoa, keccak256(abi.encode(params))));
         assertEq(token0.allowance(eoa, address(relayer)), sellAmount);
@@ -374,7 +374,7 @@ contract ComposableCow7702Test is BaseComposableCowTest {
 
         vm.prank(alice.addr);
         vm.expectRevert();
-        ComposableCow7702(payable(eoa)).execute(MODE_SINGLE_BATCH, abi.encode(calls));
+        CowAccount7702(payable(eoa)).execute(MODE_SINGLE_BATCH, abi.encode(calls));
     }
 
     /**
@@ -385,7 +385,7 @@ contract ComposableCow7702Test is BaseComposableCowTest {
 
         vm.prank(eoa);
         vm.expectRevert();
-        ComposableCow7702(payable(eoa)).execute(MODE_SINGLE_BATCH_OPDATA, abi.encode(calls, bytes("op")));
+        CowAccount7702(payable(eoa)).execute(MODE_SINGLE_BATCH_OPDATA, abi.encode(calls, bytes("op")));
     }
 
     /**
