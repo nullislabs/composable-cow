@@ -253,6 +253,12 @@ Field notes (normative semantics; full schema separate):
   names and optional human labels. Names for open-source handlers are
   derivable from the verified ABI; this map serves closed-source handlers and
   display labels.
+
+  Reason errors MUST be nullary. A handler raises one by passing `X.selector`
+  to a framework wrapper whose payload is `bytes4`, so the error is a tag and
+  is never constructed; parameters would be dropped at the raise site and
+  could not be recovered from `poll`, `getManifestPage` or `tryGenerateOrder`.
+  Structured data travels in the wrapper instead, as `waitUntil` does.
 - `display` templates are data (mustache-style with a small filter set),
   never code.
 - The document carries no handler identity, neither address nor chain. Binding

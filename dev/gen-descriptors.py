@@ -134,7 +134,14 @@ def reason_errors(asts, files):
     return {n: declared[n] for n in sorted(names) if n in declared}
 
 
-def selector(name, param_types):
+def selector(name, param_types, handler):
+    # A reason error is used as a tag: the handler passes `X.selector` to a
+    # framework wrapper whose payload is `bytes4`. Arguments have nowhere to go,
+    # so a parameterised reason error would silently drop them at the raise
+    # site, and no consumer could ever recover them.
+    if param_types:
+        sys.exit(f"{handler}: reason error {name} declares parameters ({', '.join(param_types)}); "
+                 "reason errors must be nullary, since only the selector is propagated")
     sig = f"{name}({','.join(param_types)})"
     r = subprocess.run(["cast", "sig", sig], capture_output=True, text=True)
     if r.returncode != 0:
@@ -189,7 +196,7 @@ def build(handler, overlay, asts):
         label = overlay.get("labels", {}).get(name)
         if label:
             entry["label"] = label
-        errors[selector(name, params)] = entry
+        errors[selector(name, params, handler)] = entry
 
     required = offchain_input_required(asts[src], handler)
 
