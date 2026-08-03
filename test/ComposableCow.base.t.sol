@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Safe, IERC165, Enum} from "safe/Safe.sol";
+import {Safe} from "safe/Safe.sol";
+import {Enum} from "safe/libraries/Enum.sol";
+import {IERC165} from "safe/interfaces/IERC165.sol";
 
 // Testing Libraries
 import {Base} from "./Base.t.sol";

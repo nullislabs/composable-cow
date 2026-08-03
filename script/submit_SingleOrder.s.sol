@@ -7,7 +7,7 @@ import {IERC20} from "cowprotocol/contracts/interfaces/IERC20.sol";
 
 // Safe contracts
 import {Safe} from "safe/Safe.sol";
-import {Enum} from "safe/common/Enum.sol";
+import {Enum} from "safe/libraries/Enum.sol";
 import {SafeProxyFactory} from "safe/proxies/SafeProxyFactory.sol";
 import {CompatibilityFallbackHandler} from "safe/handler/CompatibilityFallbackHandler.sol";
 import {MultiSend} from "safe/libraries/MultiSend.sol";

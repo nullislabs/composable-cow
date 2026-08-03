@@ -7,6 +7,7 @@ solc_version = "0.8.30"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 20000
+via_ir = true
 
 # Descriptor documents are read by test/ComposableCow.descriptorDoc.t.sol
 fs_permissions = [{ access = "read", path = "./descriptors" }]
@@ -18,19 +19,6 @@ targets = [
     'assert', 'underflow', 'overflow', 'divByZero', 'constantCondition', 'popEmptyArray', 'outOfBounds', 'balance'
 ]
 timeout = 100000
-
-# Deployed bytecode. via_ir cannot be the default: the Safe dependency that the
-# tests and the Safe-side deploy scripts still use has inline assembly that is
-# not annotated memory-safe, so the IR pipeline cannot allocate its stack.
-[profile.prod]
-via_ir = true
-skip = [
-    'test/**',
-    'script/deploy_ProdStack.s.sol',
-    'script/deploy_AnvilStack.s.sol',
-    'script/deploy_ExtensibleFallbackHandler.s.sol',
-    'script/submit_SingleOrder.s.sol',
-]
 
 [profile.ci]
 verbosity = 3
