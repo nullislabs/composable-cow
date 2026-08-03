@@ -637,19 +637,25 @@ recomputing the root.
 ```
 
 - `leafEncoding: "v1"` pins the full tree construction, byte-exact against
-  `_auth`: `leaf = keccak256(abi.encode(ConditionalOrderParams))`; the tree is
-  built bottom-up over the ascending-sorted leaf array; each internal node is
+  `_auth`: the leaf is hashed **twice**,
+  `leaf = keccak256(keccak256(abi.encode(ConditionalOrderParams)))`, matching
+  `keccak256(bytes.concat(hash(params)))` in `_auth`. The second hash is what
+  keeps a leaf preimage from ever being 64 bytes, which is what would otherwise
+  let an internal node be presented as a leaf. The tree is then built bottom-up
+  over the ascending-sorted leaf array; each internal node is
   `keccak256(sorted-pair(a, b))`; an odd trailing node at any level is promoted
-  unchanged to the next level. Sorted-pair hashing alone does not determine
-  tree shape, so implementations MUST follow this construction. Neither
-  OpenZeppelin's `StandardMerkleTree` (it double-hashes leaves) nor Solady's
-  `MerkleTreeLib` (it builds a complete `2n-1` node tree, diverging wherever
-  the odd-promotion rule fires, such as at 5, 7 or 9 leaves) produces this
-  shape. The mismatch is silent under verification: `MerkleProofLib.verify` is
-  sorted-pair and therefore shape-agnostic, so a non-conforming tree still
-  verifies against its own root, and the divergence surfaces only when a
-  consumer recomputes `root` from `leaves`. Reference test vectors are
-  published alongside the contracts.
+  unchanged to the next level.
+- Sorted-pair hashing alone does not determine tree shape, so implementations
+  MUST follow this construction. OpenZeppelin's `StandardMerkleTree` hashes
+  leaves twice as this does, but still does not produce this tree, and Solady's
+  `MerkleTreeLib` builds a complete `2n-1` node tree that diverges wherever the
+  odd-promotion rule fires, such as at 5, 7 or 9 leaves. The mismatch is silent
+  under verification: `MerkleProofLib.verify` is sorted-pair and therefore
+  shape-agnostic, so a non-conforming tree still verifies against its own root,
+  and the divergence surfaces only when a consumer recomputes `root` from
+  `leaves`. A wrong leaf encoding fails harder and sooner, with `_auth`
+  rejecting every proof outright. Reference test vectors are published
+  alongside the contracts.
 - `leaves` MUST be sorted ascending by leaf hash and deduplicated; consumers
   MUST reject on the first out-of-order or duplicate leaf.
 - Producers MUST serialize with RFC 8785; content addresses and digests commit
