@@ -1,76 +1,70 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {TwoStepOwnable} from "./TwoStepOwnable.sol";
+
 import {IOrderModule} from "./interfaces/IOrderModule.sol";
 import {PackageKind} from "./interfaces/PackageKind.sol";
-import {BaseConditionalOrder} from "./BaseConditionalOrder.sol";
+import {Commitment} from "./libraries/Commitment.sol";
 
 /**
  * @title Order Module mixin - opt-in module commitment for handlers
  * @author mfw78 <mfw78@nxm.rs>
- * @dev Immutable by omission, as for `OrderDescriptor`. The commitment is what
- *      advertises `IOrderModule`, not the URI list: a `BZZ_MANIFEST`
- *      commitment locates its own package and so publishes no URI. Constructed
- *      with a zero digest, the handler does not advertise the interface.
+ * @dev Inherits nothing beyond its own interface, so a handler may compose it
+ *      with `BaseConditionalOrder` and `OrderModule` without the three meeting
+ *      at a common base.
+ *
+ *      Immutable by omission: no setter, and `ModuleUpdate` is emitted
+ *      exactly once, from the constructor. The commitment is what advertises
+ *      `IOrderModule`, not the URI list, since a `BZZ_MANIFEST` commitment
+ *      locates its own package and publishes no URI. Handlers consult
+ *      `_moduleAdvertised` from `supportsInterface`.
  */
-abstract contract OrderModule is IOrderModule, BaseConditionalOrder {
-    /**
-     * @dev URIs cannot be published without a commitment to verify them against
-     */
-    error UncommittedModuleURI();
+abstract contract OrderModule is IOrderModule {
+    using Commitment for Commitment.Data;
 
-    /**
-     * @dev `SHA256` does not locate the package, so it requires a URI
-     */
-    error ModuleURIRequired();
+    /// @dev `internal` so `OwnedOrderModule` writes what these accessors read.
+    Commitment.Data internal _module;
 
-    /**
-     * @dev A `BZZ_MANIFEST` commitment locates its own package; a URI could not
-     *      be verified against a structure root anyway
-     */
-    error ModuleURINotUsed();
-
-    string[] private _moduleUris;
-    bytes32 private immutable _MODULE_DIGEST;
-    PackageKind private immutable _MODULE_KIND;
-
-    constructor(string[] memory uris, bytes32 digest, PackageKind kind) {
-        if (digest != bytes32(0)) {
-            if (kind == PackageKind.SHA256) {
-                require(uris.length > 0, ModuleURIRequired());
-            } else {
-                require(uris.length == 0, ModuleURINotUsed());
-            }
-            emit ModuleUpdate(uris, digest, kind);
-        } else {
-            require(uris.length == 0, UncommittedModuleURI());
-        }
-        _moduleUris = uris;
-        _MODULE_DIGEST = digest;
-        _MODULE_KIND = kind;
+    constructor(Commitment.Data memory module) {
+        _module.set(module);
+        if (module.digest != bytes32(0)) emit ModuleUpdate(module.uris, module.digest, module.kind);
     }
 
     /**
      * @inheritdoc IOrderModule
      */
     function moduleURI() external view returns (string[] memory uris) {
-        return _moduleUris;
+        return _module.uris;
     }
 
     /**
      * @inheritdoc IOrderModule
      */
     function moduleCommitment() external view returns (bytes32 digest, PackageKind kind) {
-        return (_MODULE_DIGEST, _MODULE_KIND);
+        return (_module.digest, _module.kind);
     }
 
-    /**
-     * @dev Advertise `IOrderModule` only when a module is committed
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        if (interfaceId == type(IOrderModule).interfaceId) {
-            return _MODULE_DIGEST != bytes32(0);
-        }
-        return super.supportsInterface(interfaceId);
+    function _moduleAdvertised() internal view returns (bool) {
+        return _module.advertised();
+    }
+}
+
+/**
+ * @dev Adds rotation. The setter writes the storage the read-only accessors
+ *      already read, so nothing has to be overridden, and `ModuleUpdate` is
+ *      re-emitted so indexers observe the change without polling.
+ *
+ *      Ownership is two-step only ({TwoStepOwnable}): the commitment is the
+ *      only mutable state here, so a mistyped single-step transfer would
+ *      strand it. The recipient must accept; `renounceOwnership` is the
+ *      deliberate freeze.
+ */
+abstract contract OwnedOrderModule is OrderModule, TwoStepOwnable {
+    using Commitment for Commitment.Data;
+
+    function setModule(Commitment.Data memory module) external onlyOwner {
+        _module.set(module);
+        emit ModuleUpdate(module.uris, module.digest, module.kind);
     }
 }
