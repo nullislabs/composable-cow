@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 
 import {IExpectedOutCalculator} from "../vendored/Milkman.sol";
 import {
@@ -50,7 +50,7 @@ contract GoodAfterTime is OrderDescriptor {
         OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
     {}
 
-    using SafeCast for uint256;
+    using SafeCastLib for uint256;
 
     // --- types
 

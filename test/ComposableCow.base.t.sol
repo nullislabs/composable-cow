@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Merkle} from "murky/Merkle.sol";
-
 import {Safe, IERC165, Enum} from "safe/Safe.sol";
 
 // Testing Libraries
@@ -30,7 +28,7 @@ import {IValueFactory} from "../src/interfaces/IValueFactory.sol";
 import {ISwapGuard, ComposableCow, GPv2Order} from "../src/ComposableCow.sol";
 import {PackageKind} from "../src/interfaces/PackageKind.sol";
 
-contract BaseComposableCowTest is Base, Merkle {
+contract BaseComposableCowTest is Base {
     using ComposableCowLib for IConditionalOrder.ConditionalOrderParams;
     using SafeLib for Safe;
 

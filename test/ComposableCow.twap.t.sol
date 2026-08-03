@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {ERC1271} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
 
 import {IConditionalOrderGenerator} from "../src/interfaces/IConditionalOrder.sol";
@@ -487,7 +487,7 @@ contract ComposableCowTwapTest is BaseComposableCowTest {
 
         // 2. Do the merkle tree dance
         (bytes32 root, bytes32[] memory proof, IConditionalOrder.ConditionalOrderParams memory leaf) =
-            _leaves.getRootAndProof(0, leaves, getRoot, getProof);
+            _leaves.getRootAndProof(0, leaves);
 
         // 3. Set the root
         _setRoot(
