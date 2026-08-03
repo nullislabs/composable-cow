@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../src/libraries/Commitment.sol";
+
 import {Safe} from "safe/Safe.sol";
 import {Enum} from "safe/libraries/Enum.sol";
 import {IERC165} from "safe/interfaces/IERC165.sol";
@@ -76,7 +78,10 @@ contract BaseComposableCowTest is Base {
         passThrough = new TestConditionalOrderGenerator();
         mirror = new MirrorConditionalOrder();
 
-        twap = new TWAP(composableCow, testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
+        twap = new TWAP(
+            composableCow,
+            Commitment.Data({uris: testDescriptorUris(), digest: TEST_DESCRIPTOR_DIGEST, kind: PackageKind.SHA256})
+        );
     }
 
     /**

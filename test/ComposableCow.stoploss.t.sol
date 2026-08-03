@@ -8,6 +8,7 @@ import {
     BaseComposableCowTest,
     IConditionalOrderGenerator
 } from "./ComposableCow.base.t.sol";
+import {Commitment} from "../src/libraries/Commitment.sol";
 import {IAggregatorV3Interface} from "../src/interfaces/IAggregatorV3Interface.sol";
 import {
     StopLoss,
@@ -34,7 +35,9 @@ contract ComposableCowStopLossTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        stopLoss = new StopLoss(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
+        stopLoss = new StopLoss(
+            Commitment.Data({uris: testDescriptorUris(), digest: TEST_DESCRIPTOR_DIGEST, kind: PackageKind.SHA256})
+        );
     }
 
     function priceToAddress(int256 price) internal returns (address) {

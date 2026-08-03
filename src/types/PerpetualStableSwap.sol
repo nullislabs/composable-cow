@@ -8,6 +8,9 @@ import {
     IConditionalOrderGenerator,
     BaseConditionalOrder
 } from "../BaseConditionalOrder.sol";
+import {Commitment} from "../libraries/Commitment.sol";
+import {BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {IOrderDescriptor} from "../interfaces/IOrderDescriptor.sol";
 import {IOrderManifest} from "../interfaces/IOrderManifest.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 import {OrderDescriptor} from "../OrderDescriptor.sol";
@@ -23,10 +26,8 @@ error NotFunded();
  * @title A smart contract that is always willing to trade between tokenA and tokenB 1:1,
  * taking decimals into account (and adding specifiable spread)
  */
-contract PerpetualStableSwap is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, PackageKind descriptorKind)
-        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
-    {}
+contract PerpetualStableSwap is BaseConditionalOrder, OrderDescriptor {
+    constructor(Commitment.Data memory descriptor) OrderDescriptor(descriptor) {}
 
     /**
      * Creates a new perpetual swap order. All resulting swaps will be made from the target contract.
@@ -182,5 +183,14 @@ contract PerpetualStableSwap is OrderDescriptor {
             // e.g. not funded: empty page, terminated, with the decoded reason
             return (new ManifestEntry[](0), false, _manifestStatus(errorData));
         }
+    }
+
+    /**
+     * @inheritdoc BaseConditionalOrder
+     * @dev Adds the descriptor sidecar, which is advertised only once committed.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        if (interfaceId == type(IOrderDescriptor).interfaceId) return _descriptorAdvertised();
+        return super.supportsInterface(interfaceId);
     }
 }

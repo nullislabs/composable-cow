@@ -8,6 +8,9 @@ import {
     IConditionalOrderGenerator,
     BaseConditionalOrder
 } from "../BaseConditionalOrder.sol";
+import {Commitment} from "../libraries/Commitment.sol";
+import {BaseConditionalOrder} from "../BaseConditionalOrder.sol";
+import {IOrderDescriptor} from "../interfaces/IOrderDescriptor.sol";
 import {IAggregatorV3Interface} from "../interfaces/IAggregatorV3Interface.sol";
 import {ConditionalOrdersUtilsLib as Utils} from "./ConditionalOrdersUtilsLib.sol";
 import {OrderDescriptor} from "../OrderDescriptor.sol";
@@ -42,10 +45,8 @@ error OrderExpired();
  * @notice Both oracles need to be denominated in the same quote currency (e.g. GNO/ETH and USD/ETH for GNO/USD stop loss orders)
  * @dev This order type has replay protection due to the `validTo` parameter, ensuring it will just execute one time
  */
-contract StopLoss is OrderDescriptor {
-    constructor(string[] memory descriptorUris, bytes32 descriptorDigest_, PackageKind descriptorKind)
-        OrderDescriptor(descriptorUris, descriptorDigest_, descriptorKind)
-    {}
+contract StopLoss is BaseConditionalOrder, OrderDescriptor {
+    constructor(Commitment.Data memory descriptor) OrderDescriptor(descriptor) {}
 
     /**
      * @dev Scaling factor for the strike price
@@ -168,5 +169,14 @@ contract StopLoss is OrderDescriptor {
         returns (string memory)
     {
         return "stop-loss triggered";
+    }
+
+    /**
+     * @inheritdoc BaseConditionalOrder
+     * @dev Adds the descriptor sidecar, which is advertised only once committed.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        if (interfaceId == type(IOrderDescriptor).interfaceId) return _descriptorAdvertised();
+        return super.supportsInterface(interfaceId);
     }
 }
