@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 import {
     ExtensibleFallbackHandler,
     ERC1271,
@@ -521,7 +521,7 @@ contract ComposableCow is ISafeSignatureVerifier {
         if (proof.length != 0) {
             // The order is part of a merkle tree
             bytes32 leaf = keccak256(bytes.concat(hash(params)));
-            require(MerkleProof.verify(proof, roots[owner], leaf), ProofNotAuthed());
+            require(MerkleProofLib.verify(proof, roots[owner], leaf), ProofNotAuthed());
         } else {
             // The order is a single order
             ctx = hash(params);

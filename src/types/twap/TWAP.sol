@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 
 import {ComposableCow} from "../../ComposableCow.sol";
 
@@ -37,7 +37,7 @@ error OrderNotInitialized();
  * @dev Designed to be used with the CoW Protocol Conditional Order Framework.
  */
 contract TWAP is OrderDescriptor {
-    using SafeCast for uint256;
+    using SafeCastLib for uint256;
 
     ComposableCow public immutable composableCow;
 

@@ -639,7 +639,7 @@ recomputing the root.
 - `leafEncoding: "v1"` pins the full tree construction, byte-exact against
   `_auth`: `leaf = keccak256(abi.encode(ConditionalOrderParams))`; the tree is
   built bottom-up over the ascending-sorted leaf array; each internal node is
-  `keccak256(sorted-pair(a, b))` (OpenZeppelin `MerkleProof` convention); an
+  `keccak256(sorted-pair(a, b))`; an
   odd trailing node at any level is promoted unchanged to the next level.
   Sorted-pair hashing alone does not determine tree shape — implementations
   MUST follow this construction (note: OpenZeppelin's `StandardMerkleTree`

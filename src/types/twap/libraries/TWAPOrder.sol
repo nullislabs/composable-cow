@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCastLib} from "solady/utils/SafeCastLib.sol";
 import {IERC20, GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
 
 import {IConditionalOrder} from "../../../interfaces/IConditionalOrder.sol";
@@ -48,7 +48,7 @@ error InvalidSpan();
  * @dev Structs, errors, and functions for time-weighted average orders.
  */
 library TWAPOrder {
-    using SafeCast for uint256;
+    using SafeCastLib for uint256;
 
     // --- structs
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 
 import {IConditionalOrder, ComposableCow, BaseComposableCowTest} from "./ComposableCow.base.t.sol";
 import {ComposableCowLib} from "./libraries/ComposableCowLib.t.sol";
@@ -163,7 +163,7 @@ contract ComposableCowProofTest is BaseComposableCowTest {
 
     /**
      * @dev The payload standard's tree construction, implemented
-     *      independently of the Murky test helper: ascending-sorted leaf
+     *      independently of solady's `MerkleTreeLib`: ascending-sorted leaf
      *      hashes, bottom-up sorted-pair keccak, odd trailing node promoted
      *      unchanged. Mutates `hashes` in place.
      */
@@ -245,7 +245,7 @@ contract ComposableCowProofTest is BaseComposableCowTest {
 
     /**
      * @dev The normative construction (`leafEncoding: "v1"`) is verifiable by
-     *      exactly the check `_auth` performs (OZ `MerkleProof.verify`), for
+     *      exactly the check `_auth` performs (`MerkleProofLib.verify`), for
      *      every leaf across minimal, even, and odd tree sizes - including
      *      the odd-promotion levels
      */
@@ -272,7 +272,9 @@ contract ComposableCowProofTest is BaseComposableCowTest {
                 }
                 bytes32[] memory proof = _normativeProof(forProof, leaf);
                 // the exact check _auth performs
-                assertTrue(MerkleProof.verify(proof, root, leaf), "normative proof rejected by OZ verify");
+                assertTrue(
+                    MerkleProofLib.verify(proof, root, leaf), "normative proof rejected by MerkleProofLib.verify"
+                );
             }
         }
     }

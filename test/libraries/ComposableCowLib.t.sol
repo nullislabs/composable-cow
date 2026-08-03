@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {Merkle} from "murky/Merkle.sol";
+import {MerkleTreeLib} from "solady/utils/MerkleTreeLib.sol";
 import {IConditionalOrder} from "../../src/interfaces/IConditionalOrder.sol";
 
 library ComposableCowLib {
@@ -27,8 +27,6 @@ library ComposableCowLib {
      * @param leaves to be inserted into the tree
      * @param n th leaf to generate the proof for
      * @param m a mapping of hashes to leaves to be populated (storage)
-     * @param getRoot a function that returns the root of the tree given an array of hashes
-     * @param getProof a function that returns the proof for a leaf given an array of hashes and the index of the leaf
      * @return the root of the tree
      * @return a proof for the n'th leaf
      * @return the n'th leaf
@@ -36,9 +34,7 @@ library ComposableCowLib {
     function getRootAndProof(
         IConditionalOrder.ConditionalOrderParams[] memory leaves,
         uint256 n,
-        mapping(bytes32 => IConditionalOrder.ConditionalOrderParams) storage m,
-        function(bytes32[] memory) internal pure returns (bytes32) getRoot,
-        function(bytes32[] memory, uint256) internal pure returns (bytes32[] memory) getProof
+        mapping(bytes32 => IConditionalOrder.ConditionalOrderParams) storage m
     ) internal returns (bytes32, bytes32[] memory, IConditionalOrder.ConditionalOrderParams memory) {
         // 1. Create a mapping of hashes to leaves
         for (uint256 i = 0; i < leaves.length; i++) {
@@ -54,11 +50,13 @@ library ComposableCowLib {
         // 3. Sort the hashes
         bytes32[] memory sortedHashes = sort(hashes);
 
-        // 4. Create the Merkle root
-        bytes32 root = getRoot(sortedHashes);
-
-        // 5. Create the Merkle proof for the n'th leaf
-        bytes32[] memory proof = getProof(sortedHashes, n);
+        // 4. Build the tree, then take the root and the n'th leaf's proof.
+        //    `MerkleTreeLib` pairs with `MerkleProofLib`, which is what
+        //    `ComposableCow` verifies with, so construction and verification
+        //    come from the same family.
+        bytes32[] memory tree = MerkleTreeLib.build(sortedHashes);
+        bytes32 root = MerkleTreeLib.root(tree);
+        bytes32[] memory proof = MerkleTreeLib.leafProof(tree, n);
 
         // 6. Get the leaf that was used to create the proof
         IConditionalOrder.ConditionalOrderParams memory leaf = m[sortedHashes[n]];

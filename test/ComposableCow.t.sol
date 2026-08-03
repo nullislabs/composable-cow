@@ -51,7 +51,7 @@ contract ComposableCowTest is BaseComposableCowTest {
     function test_setRoot_e2e() public {
         IConditionalOrder.ConditionalOrderParams[] memory _leaves = getBundle(safe1, 50);
         (bytes32 root, bytes32[] memory proof, IConditionalOrder.ConditionalOrderParams memory params) =
-            _leaves.getRootAndProof(0, leaves, getRoot, getProof);
+            _leaves.getRootAndProof(0, leaves);
 
         // should fail to validate the proof as root is still set bytes32(0)
         vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
@@ -95,7 +95,7 @@ contract ComposableCowTest is BaseComposableCowTest {
     function test_setRootWithContext_e2e() public {
         IConditionalOrder.ConditionalOrderParams[] memory _leaves = getBundle(safe1, 50);
         (bytes32 root, bytes32[] memory proof, IConditionalOrder.ConditionalOrderParams memory params) =
-            _leaves.getRootAndProof(0, leaves, getRoot, getProof);
+            _leaves.getRootAndProof(0, leaves);
 
         // should fail to validate the proof as root is still set bytes32(0)
         vm.expectRevert(ComposableCow.ProofNotAuthed.selector);

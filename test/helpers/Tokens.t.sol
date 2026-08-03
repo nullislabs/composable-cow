@@ -2,20 +2,34 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {IERC20} from "cowprotocol/contracts/interfaces/IERC20.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 /**
  * @title Mock ERC20 token for testing.
  * @author mfw78 <mfw78@nxm.rs>
  */
 contract MockERC20 is ERC20 {
+    string private _name;
+    string private _symbol;
+
     /**
      * @dev Initializes a new mock ERC20 token. No tokens are minted, makes use instead
      * of `vm.deal` in tests.
-     * @param name The name of the token.
-     * @param symbol The symbol of the token.
+     * @param name_ The name of the token.
+     * @param symbol_ The symbol of the token.
      */
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+    constructor(string memory name_, string memory symbol_) {
+        _name = name_;
+        _symbol = symbol_;
+    }
+
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function symbol() public view override returns (string memory) {
+        return _symbol;
+    }
 }
 
 /**
