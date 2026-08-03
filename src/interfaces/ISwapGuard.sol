@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {IERC165} from "safe/interfaces/IERC165.sol";
+import {IERC165} from "../vendor/Safe.sol";
 
 import {IConditionalOrder, GPv2Order} from "./IConditionalOrder.sol";
 

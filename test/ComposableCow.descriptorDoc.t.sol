@@ -7,15 +7,6 @@ import "../src/types/TradeAboveThreshold.sol";
 import {TWAPOrder} from "../src/types/twap/libraries/TWAPOrder.sol";
 
 /**
- * @dev `parseJsonKeys` is supported by the `forge` binary but absent from the
- *      vendored `forge-std` interface, so it is declared here rather than
- *      bumping the submodule for one cheatcode.
- */
-interface VmJson {
-    function parseJsonKeys(string calldata json, string calldata key) external pure returns (string[] memory);
-}
-
-/**
  * @dev Checks the generated descriptor documents against the contracts they
  *      describe. Solidity rather than a JS toolchain: the facts worth
  *      asserting are on-chain facts, and `forge` already reads JSON.
@@ -45,7 +36,7 @@ contract ComposableCowDescriptorDocTest is BaseComposableCowTest {
     }
 
     function _errorKeys(string memory doc) private pure returns (string[] memory) {
-        return VmJson(address(vm)).parseJsonKeys(doc, "$.errors");
+        return vm.parseJsonKeys(doc, "$.errors");
     }
 
     function _hex4(bytes4 sel) private pure returns (string memory) {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Safe as CowSafe} from "../src/vendor/Safe.sol";
 import {ERC1271} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
 import {ISafeSignaturePayload} from "../src/ComposableCow.sol";
 
@@ -262,7 +263,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         // should revert as the order hash mismatches
         vm.expectRevert(abi.encodeWithSelector(IConditionalOrder.OrderNotValid.selector, InvalidHash.selector));
         composableCow.isValidSafeSignature(
-            Safe(payable(address(alice.addr))),
+            CowSafe(payable(address(alice.addr))),
             address(0),
             GPv2Order.hash(order1, domainSeparator),
             domainSeparator,
@@ -300,7 +301,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         // should revert as the proof is invalid
         vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
         composableCow.isValidSafeSignature(
-            Safe(payable(owner)),
+            CowSafe(payable(owner)),
             address(0), // sender isn't used
             keccak256("some GPv2Order hash"),
             keccak256("some domain separator"),
@@ -328,7 +329,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         // should revert as the order has not been created
         vm.expectRevert(ComposableCow.SingleOrderNotAuthed.selector);
         composableCow.isValidSafeSignature(
-            Safe(payable(owner)),
+            CowSafe(payable(owner)),
             address(0), // sender isn't used
             keccak256("some gpv2order hash"),
             keccak256("some domain separator"),
@@ -359,7 +360,7 @@ contract ComposableCowTest is BaseComposableCowTest {
         bytes memory cd = abi.encodeCall(
             composableCow.isValidSafeSignature,
             (
-                Safe(payable(address(owner))),
+                CowSafe(payable(address(owner))),
                 address(0), // sender isn't used
                 keccak256(abi.encode(order)),
                 domainSeparator,

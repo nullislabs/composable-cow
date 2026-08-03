@@ -2,13 +2,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
-import {
-    ExtensibleFallbackHandler,
-    ERC1271,
-    ISignatureVerifierMuxer,
-    ISafeSignatureVerifier,
-    Safe
-} from "safe/handler/ExtensibleFallbackHandler.sol";
+
+import {IERC165, ERC1271, ISignatureVerifierMuxer, ISafeSignatureVerifier, Safe} from "./vendor/Safe.sol";
 
 import {IConditionalOrder, IConditionalOrderGenerator, GPv2Order} from "./interfaces/IConditionalOrder.sol";
 import {ISwapGuard} from "./interfaces/ISwapGuard.sol";
@@ -557,9 +552,7 @@ contract ComposableCow is ISafeSignatureVerifier {
         GPv2Order.Data memory order
     ) internal view returns (bytes memory signature) {
         // Get the signature for the order
-        try ExtensibleFallbackHandler(owner).supportsInterface(type(ISignatureVerifierMuxer).interfaceId) returns (
-            bool supported
-        ) {
+        try IERC165(owner).supportsInterface(type(ISignatureVerifierMuxer).interfaceId) returns (bool supported) {
             if (!supported) {
                 revert InvalidFallbackHandler();
             }

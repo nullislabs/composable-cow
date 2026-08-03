@@ -57,3 +57,4 @@ jobs:
         # `fork` needs an archive-node RPC and is not run here. The fuzz seed is
         # pinned so a failure is reproducible from the log alone.
         run: forge test -vvv --no-match-test "fork" --fuzz-seed 672679878
+

@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import {Script} from "forge-std/Script.sol";
 
 // ExtensibleFallbackHandler
-import {ExtensibleFallbackHandler} from "../lib/safe/contracts/handler/ExtensibleFallbackHandler.sol";
+import {ExtensibleFallbackHandler} from "safe/handler/ExtensibleFallbackHandler.sol";
 
 // ComposableCow
 import {ComposableCow} from "../src/ComposableCow.sol";

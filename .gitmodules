@@ -1,15 +1,15 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-	branch = v1.5.3
+	branch = v1.11.0
 [submodule "lib/cowprotocol"]
 	path = lib/cowprotocol
 	url = https://github.com/cowprotocol/contracts
 	branch = main
 [submodule "lib/safe"]
 	path = lib/safe
-	url = https://github.com/cowdao-grants/extensible-fallback-handler
-	branch = main
+	url = https://github.com/safe-global/safe-smart-account
+	branch = v1.5.0
 [submodule "lib/solady"]
 	path = lib/solady
 	url = https://github.com/vectorized/solady

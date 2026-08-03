@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {ERC1271, Safe} from "safe/handler/extensible/SignatureVerifierMuxer.sol";
+import {ERC1271, Safe} from "./vendor/Safe.sol";
 import {GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
 
 import {ComposableCow} from "./ComposableCow.sol";
