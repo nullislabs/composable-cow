@@ -243,19 +243,32 @@ contract ComposableCowProofTest is BaseComposableCowTest {
         }
     }
 
+    /// @dev The leaf `_auth` computes: the params hash, hashed again. Hashing
+    ///      twice keeps a leaf preimage from ever being 64 bytes, which is what
+    ///      would let an internal node be passed off as a leaf.
+    function _authLeaf(IConditionalOrder.ConditionalOrderParams memory params) internal pure returns (bytes32) {
+        return keccak256(bytes.concat(keccak256(abi.encode(params))));
+    }
+
     /**
-     * @dev The normative construction (`leafEncoding: "v1"`) is verifiable by
-     *      exactly the check `_auth` performs (`MerkleProofLib.verify`), for
-     *      every leaf across minimal, even, and odd tree sizes - including
-     *      the odd-promotion levels
+     * @dev The normative construction (`leafEncoding: "v1"`) is accepted by
+     *      `_auth` itself, for every leaf across minimal, even and odd tree
+     *      sizes, including the odd-promotion levels.
+     *
+     *      This goes through `getTradeableOrderWithSignature` rather than
+     *      calling `MerkleProofLib.verify` directly. Verifying a tree against
+     *      its own root only proves the tree is self-consistent, which a tree
+     *      built with the wrong leaf encoding also is: the earlier version of
+     *      this test passed while using a leaf `_auth` never computes.
      */
     function test_payloadTree_NormativeConstructionVerifiesLikeAuth() public {
         uint256[5] memory sizes = [uint256(2), 3, 4, 5, 7];
         for (uint256 s = 0; s < sizes.length; s++) {
             IConditionalOrder.ConditionalOrderParams[] memory bundle = getBundle(safe1, sizes[s]);
+
             bytes32[] memory hashes = new bytes32[](bundle.length);
             for (uint256 i = 0; i < bundle.length; i++) {
-                hashes[i] = keccak256(abi.encode(bundle[i]));
+                hashes[i] = _authLeaf(bundle[i]);
             }
 
             bytes32[] memory forRoot = new bytes32[](hashes.length);
@@ -264,18 +277,43 @@ contract ComposableCowProofTest is BaseComposableCowTest {
             }
             bytes32 root = _normativeRoot(forRoot);
 
+            _setRoot(
+                address(safe1),
+                root,
+                ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)})
+            );
+
             for (uint256 i = 0; i < bundle.length; i++) {
-                bytes32 leaf = keccak256(abi.encode(bundle[i]));
                 bytes32[] memory forProof = new bytes32[](hashes.length);
                 for (uint256 j = 0; j < hashes.length; j++) {
                     forProof[j] = hashes[j];
                 }
-                bytes32[] memory proof = _normativeProof(forProof, leaf);
-                // the exact check _auth performs
-                assertTrue(
-                    MerkleProofLib.verify(proof, root, leaf), "normative proof rejected by MerkleProofLib.verify"
-                );
+                bytes32[] memory proof = _normativeProof(forProof, _authLeaf(bundle[i]));
+
+                // reverts `ProofNotAuthed` if the construction is not what `_auth` accepts
+                composableCow.getTradeableOrderWithSignature(address(safe1), bundle[i], bytes(""), proof);
             }
         }
+    }
+
+    /// @dev The encoding the payload standard used to document, a single hash,
+    ///      is rejected. Pins that the two are not interchangeable, so the spec
+    ///      cannot drift back without this failing.
+    function test_payloadTree_SingleHashedLeafIsRejected() public {
+        IConditionalOrder.ConditionalOrderParams[] memory bundle = getBundle(safe1, 2);
+
+        bytes32 a = keccak256(abi.encode(bundle[0]));
+        bytes32 b = keccak256(abi.encode(bundle[1]));
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = b;
+
+        _setRoot(
+            address(safe1),
+            _hashSortedPair(a, b),
+            ComposableCow.Proof({uris: new string[](0), blobVersionedHashes: new bytes32[](0)})
+        );
+
+        vm.expectRevert(ComposableCow.ProofNotAuthed.selector);
+        composableCow.getTradeableOrderWithSignature(address(safe1), bundle[0], bytes(""), proof);
     }
 }

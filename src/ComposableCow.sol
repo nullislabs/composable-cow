@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {EfficientHashLib} from "solady/utils/EfficientHashLib.sol";
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 
 import {IERC165, ERC1271, ISignatureVerifierMuxer, ISafeSignatureVerifier, Safe} from "./vendor/Safe.sol";
@@ -515,7 +516,7 @@ contract ComposableCow is ISafeSignatureVerifier {
     {
         if (proof.length != 0) {
             // The order is part of a merkle tree
-            bytes32 leaf = keccak256(bytes.concat(hash(params)));
+            bytes32 leaf = EfficientHashLib.hash(hash(params));
             require(MerkleProofLib.verify(proof, roots[owner], leaf), ProofNotAuthed());
         } else {
             // The order is a single order
