@@ -11,6 +11,7 @@ import {
     PollTryAtTimestampHandler,
     SuccessHandler
 } from "./ComposableCow.base.t.sol";
+import {Commitment} from "../src/libraries/Commitment.sol";
 import {IOrderManifest} from "../src/interfaces/IOrderManifest.sol";
 import {IERC165} from "safe/interfaces/IERC165.sol";
 import {TWAPOrder} from "../src/types/twap/libraries/TWAPOrder.sol";
@@ -42,7 +43,9 @@ contract ComposableCowManifestTest is BaseComposableCowTest {
     function setUp() public virtual override(BaseComposableCowTest) {
         super.setUp();
 
-        perpetualSwap = new PerpetualStableSwap(testDescriptorUris(), TEST_DESCRIPTOR_DIGEST, PackageKind.SHA256);
+        perpetualSwap = new PerpetualStableSwap(
+            Commitment.Data({uris: testDescriptorUris(), digest: TEST_DESCRIPTOR_DIGEST, kind: PackageKind.SHA256})
+        );
         currentBlockTimestampFactory = new CurrentBlockTimestampFactory();
     }
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../src/libraries/Commitment.sol";
 import {Script} from "forge-std/Script.sol";
 
 import {ComposableCow} from "../src/ComposableCow.sol";
@@ -17,9 +18,9 @@ contract DeployOrderTypes is Script {
         address composableCow = vm.envAddress("COMPOSABLE_COW");
         vm.startBroadcast(deployerPrivateKey);
 
-        new TWAP(ComposableCow(composableCow), new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new GoodAfterTime(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new PerpetualStableSwap(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new TWAP(ComposableCow(composableCow), Commitment.none());
+        new GoodAfterTime(Commitment.none());
+        new PerpetualStableSwap(Commitment.none());
         new TradeAboveThreshold();
 
         vm.stopBroadcast();

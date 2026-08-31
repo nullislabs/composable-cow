@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
+import {Commitment} from "../src/libraries/Commitment.sol";
 import {Script} from "forge-std/Script.sol";
 
 // ExtensibleFallbackHandler
@@ -34,11 +35,11 @@ contract DeployProdStack is Script {
         ComposableCow composableCow = new ComposableCow{salt: bytes32(0)}(settlement);
 
         // Deploy order types
-        new TWAP{salt: bytes32(0)}(composableCow, new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new GoodAfterTime{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
-        new PerpetualStableSwap{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new TWAP{salt: bytes32(0)}(composableCow, Commitment.none());
+        new GoodAfterTime{salt: bytes32(0)}(Commitment.none());
+        new PerpetualStableSwap{salt: bytes32(0)}(Commitment.none());
         new TradeAboveThreshold{salt: bytes32(0)}();
-        new StopLoss{salt: bytes32(0)}(new string[](0), bytes32(0), PackageKind.BZZ_MANIFEST);
+        new StopLoss{salt: bytes32(0)}(Commitment.none());
 
         // Deploy value factories
         new CurrentBlockTimestampFactory{salt: bytes32(0)}();
